@@ -97,83 +97,13 @@
   // video -- simpler to keep in sync and there's only ever one button
   // visible at a time anyway.
 
-  // Loadout download-arrow icon cell data, ported as a static literal from
-  // src/icons.js's `appCells` (generated there by `buildIcon`/`flatIcon`).
-  // The icon never changes, and content scripts can't `import` from the
-  // main app's src/ (no shared module boundary between the two packages),
-  // so the already-computed cells are duplicated here rather than
-  // re-running buildIcon at runtime. Keep this in sync with src/icons.js's
-  // `appCells` if that shape ever changes.
-  const APP_CELLS = [
-    { x: 5, y: 1, fill: '#2f6fed' },
-    { x: 6, y: 1, fill: '#2f6fed' },
-    { x: 5, y: 2, fill: '#2f6fed' },
-    { x: 6, y: 2, fill: '#2f6fed' },
-    { x: 5, y: 3, fill: '#2f6fed' },
-    { x: 6, y: 3, fill: '#2f6fed' },
-    { x: 5, y: 4, fill: '#2f6fed' },
-    { x: 6, y: 4, fill: '#2f6fed' },
-    { x: 3, y: 5, fill: '#2f6fed' },
-    { x: 4, y: 5, fill: '#2f6fed' },
-    { x: 5, y: 5, fill: '#2f6fed' },
-    { x: 6, y: 5, fill: '#2f6fed' },
-    { x: 7, y: 5, fill: '#2f6fed' },
-    { x: 8, y: 5, fill: '#2f6fed' },
-    { x: 4, y: 6, fill: '#2f6fed' },
-    { x: 5, y: 6, fill: '#2f6fed' },
-    { x: 6, y: 6, fill: '#2f6fed' },
-    { x: 7, y: 6, fill: '#2f6fed' },
-    { x: 5, y: 7, fill: '#2f6fed' },
-    { x: 6, y: 7, fill: '#2f6fed' },
-    { x: 2, y: 9, fill: '#2f6fed' },
-    { x: 3, y: 9, fill: '#2f6fed' },
-    { x: 4, y: 9, fill: '#2f6fed' },
-    { x: 5, y: 9, fill: '#2f6fed' },
-    { x: 6, y: 9, fill: '#2f6fed' },
-    { x: 7, y: 9, fill: '#2f6fed' },
-    { x: 8, y: 9, fill: '#2f6fed' },
-    { x: 9, y: 9, fill: '#2f6fed' },
-    { x: 2, y: 8, fill: '#2f6fed' },
-    { x: 9, y: 8, fill: '#2f6fed' },
-    { x: 4, y: 1, fill: '#1b1f24' },
-    { x: 5, y: 0, fill: '#1b1f24' },
-    { x: 7, y: 1, fill: '#1b1f24' },
-    { x: 6, y: 0, fill: '#1b1f24' },
-    { x: 4, y: 2, fill: '#1b1f24' },
-    { x: 7, y: 2, fill: '#1b1f24' },
-    { x: 4, y: 3, fill: '#1b1f24' },
-    { x: 7, y: 3, fill: '#1b1f24' },
-    { x: 4, y: 4, fill: '#1b1f24' },
-    { x: 7, y: 4, fill: '#1b1f24' },
-    { x: 2, y: 5, fill: '#1b1f24' },
-    { x: 3, y: 6, fill: '#1b1f24' },
-    { x: 3, y: 4, fill: '#1b1f24' },
-    { x: 9, y: 5, fill: '#1b1f24' },
-    { x: 8, y: 6, fill: '#1b1f24' },
-    { x: 8, y: 4, fill: '#1b1f24' },
-    { x: 4, y: 7, fill: '#1b1f24' },
-    { x: 7, y: 7, fill: '#1b1f24' },
-    { x: 5, y: 8, fill: '#1b1f24' },
-    { x: 6, y: 8, fill: '#1b1f24' },
-    { x: 1, y: 9, fill: '#1b1f24' },
-    { x: 2, y: 10, fill: '#1b1f24' },
-    { x: 3, y: 10, fill: '#1b1f24' },
-    { x: 3, y: 8, fill: '#1b1f24' },
-    { x: 4, y: 10, fill: '#1b1f24' },
-    { x: 4, y: 8, fill: '#1b1f24' },
-    { x: 5, y: 10, fill: '#1b1f24' },
-    { x: 6, y: 10, fill: '#1b1f24' },
-    { x: 7, y: 10, fill: '#1b1f24' },
-    { x: 7, y: 8, fill: '#1b1f24' },
-    { x: 8, y: 10, fill: '#1b1f24' },
-    { x: 8, y: 8, fill: '#1b1f24' },
-    { x: 10, y: 9, fill: '#1b1f24' },
-    { x: 9, y: 10, fill: '#1b1f24' },
-    { x: 1, y: 8, fill: '#1b1f24' },
-    { x: 2, y: 7, fill: '#1b1f24' },
-    { x: 10, y: 8, fill: '#1b1f24' },
-    { x: 9, y: 7, fill: '#1b1f24' },
-  ];
+  // Loadout's download-arrow icon markup, ported as a static literal from
+  // src/icons.js's `appIcon`. Content scripts can't `import` from the main
+  // app's src/ (no shared module boundary between the two packages), so
+  // the markup is duplicated here. Keep this in sync with src/icons.js's
+  // `appIcon` if that shape ever changes.
+  const APP_ICON_MARKUP =
+    '<path d="M12 3v12m0 0l-4-4m4 4l4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>';
 
   let overlayHost = null;
   let overlayButton = null;
@@ -244,6 +174,11 @@
       }
       .pill .sprite {
         flex-shrink: 0;
+        fill: none;
+        stroke: #fff;
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
       }
       .pill .label {
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, Roboto, sans-serif;
@@ -261,17 +196,8 @@
     svg.setAttribute('class', 'sprite');
     svg.setAttribute('width', '16');
     svg.setAttribute('height', '16');
-    svg.setAttribute('viewBox', '0 0 12 12');
-    svg.setAttribute('shape-rendering', 'crispEdges');
-    for (const cell of APP_CELLS) {
-      const rect = document.createElementNS(svgNs, 'rect');
-      rect.setAttribute('x', cell.x);
-      rect.setAttribute('y', cell.y);
-      rect.setAttribute('width', '1');
-      rect.setAttribute('height', '1');
-      rect.setAttribute('fill', cell.fill);
-      svg.appendChild(rect);
-    }
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.innerHTML = APP_ICON_MARKUP;
 
     const label = document.createElement('span');
     label.className = 'label';

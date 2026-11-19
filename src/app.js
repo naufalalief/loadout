@@ -3,10 +3,7 @@
 // build step -- `window.__TAURI__` is exposed because `withGlobalTauri` is
 // enabled in `tauri.conf.json`.
 
-// `appCells` is icons.js's already-built (buildIcon-processed) cell array
-// for the app's pot+sprout icon -- `buildIcon` itself isn't needed here
-// since this module only renders a pre-built icon, never constructs one.
-import { appCells, wrenchCells, emptyPotCells, discCells, zipCells, filmCells, seedCells, pdfCells, audioCells, imgCells, docCells, exeCells } from "./icons.js";
+import { appIcon, settingsIcon, discIcon, zipIcon, pdfIcon, audioIcon, imgIcon, docIcon, exeIcon, filmIcon } from "./icons.js";
 
 const { invoke } = window.__TAURI__.core;
 
@@ -57,22 +54,12 @@ const setupOpenFolderBtn = document.getElementById("setup-open-folder-btn");
 
 // Clears `svgEl` and repopulates it with one 1x1 <rect> per cell, in the
 // pixel-icon grid coordinate system `icons.js`'s `buildIcon` produces.
-// Every icon rendered from here on (this task's status-bar wrench and
-// empty-state pot, plus every per-row icon in Task 5) goes through this
-// instead of re-implementing the <rect>-building loop. The title bar's own
-// icon (Task 3) predates this helper and is left as its own inline loop.
-function renderIconInto(svgEl, cells) {
-  svgEl.replaceChildren(
-    ...cells.map((c) => {
-      const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-      rect.setAttribute("x", c.x);
-      rect.setAttribute("y", c.y);
-      rect.setAttribute("width", "1");
-      rect.setAttribute("height", "1");
-      rect.setAttribute("fill", c.fill);
-      return rect;
-    }),
-  );
+// Icons are plain stroke-based SVG markup now (icons.js exports each
+// icon's inner <svg> markup as a string) -- the icon's color comes from
+// the target element's own CSS `color` (every icon path/shape below uses
+// `stroke="currentColor"`), not a per-cell fill.
+function renderIconInto(svgEl, markup) {
+  svgEl.innerHTML = markup;
 }
 
 function formatBytes(bytes) {
@@ -202,29 +189,27 @@ const EXTRACT_BADGE = {
   Canceled: ["Canceled", "var(--ink-dim)"],
 };
 
-// Picks a row's per-file-type `.slot` icon from its filename's extension
-// (case-insensitive). Extensions not in the table -- including no extension
-// at all -- fall back to film. Every extract-job row always shows the film
-// icon regardless of its eventual filename (see `updateExtractRow`, which
-// calls `filmCells` directly instead of this).
-// This is new selection logic: the real app's data model never branched on
-// filename before this task, it just had nothing rendering an icon at all.
-function iconCellsForFilename(filename) {
+// Picks a row's per-file-type `.slot` icon markup from its filename's
+// extension (case-insensitive). Extensions not in the table -- including
+// no extension at all -- fall back to the film icon. Every extract-job row
+// always shows the film icon regardless of its eventual filename (see
+// `updateExtractRow`, which uses `filmIcon` directly instead of this).
+function iconMarkupForFilename(filename) {
   const lower = String(filename ?? "").toLowerCase();
   const byExt = {
-    iso: discCells,
-    zip: zipCells, rar: zipCells, "7z": zipCells, tar: zipCells, gz: zipCells,
-    pdf: pdfCells,
-    mp3: audioCells, wav: audioCells, flac: audioCells, ogg: audioCells, m4a: audioCells,
-    png: imgCells, jpg: imgCells, jpeg: imgCells, gif: imgCells, webp: imgCells, bmp: imgCells, svg: imgCells,
-    doc: docCells, docx: docCells, txt: docCells, rtf: docCells, odt: docCells,
-    exe: exeCells, msi: exeCells, app: exeCells, dmg: exeCells,
+    iso: discIcon,
+    zip: zipIcon, rar: zipIcon, "7z": zipIcon, tar: zipIcon, gz: zipIcon,
+    pdf: pdfIcon,
+    mp3: audioIcon, wav: audioIcon, flac: audioIcon, ogg: audioIcon, m4a: audioIcon,
+    png: imgIcon, jpg: imgIcon, jpeg: imgIcon, gif: imgIcon, webp: imgIcon, bmp: imgIcon, svg: imgIcon,
+    doc: docIcon, docx: docIcon, txt: docIcon, rtf: docIcon, odt: docIcon,
+    exe: exeIcon, msi: exeIcon, app: exeIcon, dmg: exeIcon,
   };
   const ext = lower.includes(".") ? lower.slice(lower.lastIndexOf(".") + 1) : "";
   // Own-property check, not `byExt[ext] ?? ...`: a name like "x.constructor"
   // would otherwise hit an inherited Object.prototype member and return a
-  // function instead of a cell array.
-  return Object.prototype.hasOwnProperty.call(byExt, ext) ? byExt[ext] : filmCells;
+  // function instead of an icon string.
+  return Object.prototype.hasOwnProperty.call(byExt, ext) ? byExt[ext] : filmIcon;
 }
 
 // Rows are kept alive across polls, keyed by download id, and only their
@@ -244,10 +229,9 @@ function createRow(item) {
   slot.className = "slot";
   const svgIcon = document.createElementNS(svgNs, "svg");
   svgIcon.setAttribute("class", "sprite");
-  svgIcon.setAttribute("width", "26");
-  svgIcon.setAttribute("height", "26");
-  svgIcon.setAttribute("viewBox", "0 0 12 12");
-  svgIcon.setAttribute("shape-rendering", "crispEdges");
+  svgIcon.setAttribute("width", "20");
+  svgIcon.setAttribute("height", "20");
+  svgIcon.setAttribute("viewBox", "0 0 24 24");
   slot.appendChild(svgIcon);
   row.appendChild(slot);
 
@@ -672,7 +656,7 @@ function updateDownloadRow(els, download) {
   const iconKey = download.filename;
   if (els.iconKey !== iconKey) {
     els.iconKey = iconKey;
-    renderIconInto(els.svgIcon, iconCellsForFilename(download.filename));
+    renderIconInto(els.svgIcon, iconMarkupForFilename(download.filename));
   }
 
   const pct = progressPercent(download);
@@ -731,7 +715,7 @@ function updateExtractRow(els, job) {
   // never re-sniffed from `job.title`/`job.source_url`.
   if (els.iconKey !== "extract") {
     els.iconKey = "extract";
-    renderIconInto(els.svgIcon, filmCells);
+    renderIconInto(els.svgIcon, filmIcon);
   }
 
   const awaitingChoice = job.status === "AwaitingFormatChoice";
@@ -899,31 +883,34 @@ invoke("get_settings")
 const autoReplantCounts = new Map();
 const AUTO_REPLANT_MAX_ATTEMPTS = 3;
 
-// Plays a short two-tone "item get" chime via the Web Audio API --
-// synthesized at runtime rather than shipping a sound asset, so there's
-// no licensing/sourcing question for what file to bundle. Never throws:
-// AudioContext can be unavailable (and in some browsers requires a prior
-// user gesture, which every path that calls this already follows, since
-// it only ever fires off the back of a poll reacting to a download the
-// user themselves started).
+// Plays a short, soft two-tone notification chime via the Web Audio API
+// -- synthesized at runtime rather than shipping a sound asset, so
+// there's no licensing/sourcing question for what file to bundle. A
+// plain sine tone with a gentle attack/decay, not the square-wave
+// "item get" chiptune blip this used to be -- that read as a game sound
+// effect, out of place once the rest of the UI stopped looking like one.
+// Never throws: AudioContext can be unavailable (and in some browsers
+// requires a prior user gesture, which every path that calls this
+// already follows, since it only ever fires off the back of a poll
+// reacting to a download the user themselves started).
 function playHarvestChime() {
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
     const now = ctx.currentTime;
-    [660, 990].forEach((freq, i) => {
+    [880, 1108].forEach((freq, i) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
-      osc.type = "square";
+      osc.type = "sine";
       osc.frequency.value = freq;
-      const start = now + i * 0.09;
+      const start = now + i * 0.1;
       gain.gain.setValueAtTime(0.0001, start);
-      gain.gain.exponentialRampToValueAtTime(0.15, start + 0.015);
-      gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.18);
+      gain.gain.exponentialRampToValueAtTime(0.12, start + 0.04);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.32);
       osc.connect(gain).connect(ctx.destination);
       osc.start(start);
-      osc.stop(start + 0.2);
+      osc.stop(start + 0.34);
     });
-    setTimeout(() => ctx.close().catch(() => {}), 500);
+    setTimeout(() => ctx.close().catch(() => {}), 700);
   } catch (err) {
     // No Web Audio support, or the browser blocked it -- the chime is a
     // nice-to-have, never worth surfacing an error for.
@@ -1441,13 +1428,13 @@ settingsFormEl.addEventListener("submit", async (event) => {
 // icon, the Settings panel's about-footer app icon, and both popups' own
 // title bar icon: all static (never change at runtime), so rendered once
 // here via renderIconInto.
-renderIconInto(shedIconEl, wrenchCells);
-renderIconInto(emptyPotIconEl, emptyPotCells);
-renderIconInto(addSeedIconEl, seedCells);
-renderIconInto(settingsAboutIconEl, appCells);
-renderIconInto(document.getElementById("add-panel-appicon"), appCells);
-renderIconInto(document.getElementById("settings-panel-appicon"), appCells);
-renderIconInto(document.getElementById("browser-setup-panel-appicon"), appCells);
+renderIconInto(shedIconEl, settingsIcon);
+renderIconInto(emptyPotIconEl, appIcon);
+renderIconInto(addSeedIconEl, appIcon);
+renderIconInto(settingsAboutIconEl, appIcon);
+renderIconInto(document.getElementById("add-panel-appicon"), appIcon);
+renderIconInto(document.getElementById("settings-panel-appicon"), appIcon);
+renderIconInto(document.getElementById("browser-setup-panel-appicon"), appIcon);
 
 refreshList();
 setInterval(refreshList, POLL_INTERVAL_MS);
