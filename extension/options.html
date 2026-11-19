@@ -2,99 +2,89 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>LOADOUT — Extension Options</title>
+  <title>Loadout — Extension Options</title>
   <link rel="stylesheet" href="options.css">
 </head>
 <body>
   <div class="page">
     <div class="header">
       <div class="headicon">
-        <svg class="sprite" width="34" height="34" viewBox="0 0 12 12" shape-rendering="crispEdges">
-          <!-- appCells: same literal cell data as content.js's APP_CELLS
-               (pot + sprout), ported from src/icons.js's appCells
-               (= potCells.concat(plantCells)), generated there by
-               buildIcon. Keep in sync with both if that shape ever
-               changes. -->
-          <rect x="3" y="8" width="1" height="1" fill="#e8a878"/>
-          <rect x="4" y="8" width="1" height="1" fill="#c9793e"/>
-          <rect x="5" y="8" width="1" height="1" fill="#c9793e"/>
-          <rect x="6" y="8" width="1" height="1" fill="#c9793e"/>
-          <rect x="7" y="8" width="1" height="1" fill="#c9793e"/>
-          <rect x="8" y="8" width="1" height="1" fill="#8a4f24"/>
-          <rect x="3" y="9" width="1" height="1" fill="#e8a878"/>
-          <rect x="4" y="9" width="1" height="1" fill="#c9793e"/>
-          <rect x="5" y="9" width="1" height="1" fill="#c9793e"/>
-          <rect x="6" y="9" width="1" height="1" fill="#c9793e"/>
-          <rect x="7" y="9" width="1" height="1" fill="#c9793e"/>
-          <rect x="8" y="9" width="1" height="1" fill="#8a4f24"/>
-          <rect x="4" y="10" width="1" height="1" fill="#e8a878"/>
-          <rect x="5" y="10" width="1" height="1" fill="#c9793e"/>
-          <rect x="6" y="10" width="1" height="1" fill="#c9793e"/>
-          <rect x="7" y="10" width="1" height="1" fill="#8a4f24"/>
-          <rect x="2" y="8" width="1" height="1" fill="#3a2410"/>
-          <rect x="3" y="7" width="1" height="1" fill="#3a2410"/>
-          <rect x="4" y="7" width="1" height="1" fill="#3a2410"/>
-          <rect x="5" y="7" width="1" height="1" fill="#3a2410"/>
-          <rect x="6" y="7" width="1" height="1" fill="#3a2410"/>
-          <rect x="7" y="7" width="1" height="1" fill="#3a2410"/>
-          <rect x="9" y="8" width="1" height="1" fill="#3a2410"/>
-          <rect x="8" y="7" width="1" height="1" fill="#3a2410"/>
-          <rect x="2" y="9" width="1" height="1" fill="#3a2410"/>
-          <rect x="3" y="10" width="1" height="1" fill="#3a2410"/>
-          <rect x="9" y="9" width="1" height="1" fill="#3a2410"/>
-          <rect x="8" y="10" width="1" height="1" fill="#3a2410"/>
-          <rect x="4" y="11" width="1" height="1" fill="#3a2410"/>
-          <rect x="5" y="11" width="1" height="1" fill="#3a2410"/>
-          <rect x="6" y="11" width="1" height="1" fill="#3a2410"/>
-          <rect x="7" y="11" width="1" height="1" fill="#3a2410"/>
-          <rect x="5" y="4" width="1" height="1" fill="#b8e89a"/>
-          <rect x="6" y="4" width="1" height="1" fill="#2f6b22"/>
-          <rect x="5" y="5" width="1" height="1" fill="#b8e89a"/>
-          <rect x="6" y="5" width="1" height="1" fill="#2f6b22"/>
-          <rect x="5" y="6" width="1" height="1" fill="#b8e89a"/>
-          <rect x="6" y="6" width="1" height="1" fill="#2f6b22"/>
-          <rect x="5" y="7" width="1" height="1" fill="#b8e89a"/>
-          <rect x="6" y="7" width="1" height="1" fill="#2f6b22"/>
-          <rect x="2" y="3" width="1" height="1" fill="#b8e89a"/>
-          <rect x="3" y="2" width="1" height="1" fill="#b8e89a"/>
-          <rect x="3" y="3" width="1" height="1" fill="#5aa83c"/>
-          <rect x="4" y="2" width="1" height="1" fill="#5aa83c"/>
-          <rect x="9" y="3" width="1" height="1" fill="#2f6b22"/>
-          <rect x="8" y="2" width="1" height="1" fill="#2f6b22"/>
-          <rect x="8" y="3" width="1" height="1" fill="#5aa83c"/>
-          <rect x="7" y="2" width="1" height="1" fill="#5aa83c"/>
-          <rect x="4" y="4" width="1" height="1" fill="#3a2410"/>
-          <rect x="5" y="3" width="1" height="1" fill="#3a2410"/>
-          <rect x="7" y="4" width="1" height="1" fill="#3a2410"/>
-          <rect x="6" y="3" width="1" height="1" fill="#3a2410"/>
-          <rect x="4" y="5" width="1" height="1" fill="#3a2410"/>
-          <rect x="7" y="5" width="1" height="1" fill="#3a2410"/>
-          <rect x="4" y="6" width="1" height="1" fill="#3a2410"/>
-          <rect x="7" y="6" width="1" height="1" fill="#3a2410"/>
-          <rect x="4" y="7" width="1" height="1" fill="#3a2410"/>
-          <rect x="5" y="8" width="1" height="1" fill="#3a2410"/>
-          <rect x="7" y="7" width="1" height="1" fill="#3a2410"/>
-          <rect x="6" y="8" width="1" height="1" fill="#3a2410"/>
-          <rect x="1" y="3" width="1" height="1" fill="#3a2410"/>
-          <rect x="2" y="4" width="1" height="1" fill="#3a2410"/>
-          <rect x="2" y="2" width="1" height="1" fill="#3a2410"/>
-          <rect x="3" y="1" width="1" height="1" fill="#3a2410"/>
-          <rect x="4" y="3" width="1" height="1" fill="#3a2410"/>
-          <rect x="3" y="4" width="1" height="1" fill="#3a2410"/>
-          <rect x="5" y="2" width="1" height="1" fill="#3a2410"/>
-          <rect x="4" y="1" width="1" height="1" fill="#3a2410"/>
-          <rect x="10" y="3" width="1" height="1" fill="#3a2410"/>
-          <rect x="9" y="4" width="1" height="1" fill="#3a2410"/>
-          <rect x="9" y="2" width="1" height="1" fill="#3a2410"/>
-          <rect x="8" y="1" width="1" height="1" fill="#3a2410"/>
-          <rect x="7" y="3" width="1" height="1" fill="#3a2410"/>
-          <rect x="8" y="4" width="1" height="1" fill="#3a2410"/>
-          <rect x="6" y="2" width="1" height="1" fill="#3a2410"/>
-          <rect x="7" y="1" width="1" height="1" fill="#3a2410"/>
+        <svg class="sprite" width="28" height="28" viewBox="0 0 12 12" shape-rendering="crispEdges">
+          <!-- Same download-arrow icon as content.js's APP_CELLS and
+               src/icons.js's appCells. Keep in sync with both if that
+               shape ever changes. -->
+          <rect x="5" y="1" width="1" height="1" fill="#2f6fed"/>
+          <rect x="6" y="1" width="1" height="1" fill="#2f6fed"/>
+          <rect x="5" y="2" width="1" height="1" fill="#2f6fed"/>
+          <rect x="6" y="2" width="1" height="1" fill="#2f6fed"/>
+          <rect x="5" y="3" width="1" height="1" fill="#2f6fed"/>
+          <rect x="6" y="3" width="1" height="1" fill="#2f6fed"/>
+          <rect x="5" y="4" width="1" height="1" fill="#2f6fed"/>
+          <rect x="6" y="4" width="1" height="1" fill="#2f6fed"/>
+          <rect x="3" y="5" width="1" height="1" fill="#2f6fed"/>
+          <rect x="4" y="5" width="1" height="1" fill="#2f6fed"/>
+          <rect x="5" y="5" width="1" height="1" fill="#2f6fed"/>
+          <rect x="6" y="5" width="1" height="1" fill="#2f6fed"/>
+          <rect x="7" y="5" width="1" height="1" fill="#2f6fed"/>
+          <rect x="8" y="5" width="1" height="1" fill="#2f6fed"/>
+          <rect x="4" y="6" width="1" height="1" fill="#2f6fed"/>
+          <rect x="5" y="6" width="1" height="1" fill="#2f6fed"/>
+          <rect x="6" y="6" width="1" height="1" fill="#2f6fed"/>
+          <rect x="7" y="6" width="1" height="1" fill="#2f6fed"/>
+          <rect x="5" y="7" width="1" height="1" fill="#2f6fed"/>
+          <rect x="6" y="7" width="1" height="1" fill="#2f6fed"/>
+          <rect x="2" y="9" width="1" height="1" fill="#2f6fed"/>
+          <rect x="3" y="9" width="1" height="1" fill="#2f6fed"/>
+          <rect x="4" y="9" width="1" height="1" fill="#2f6fed"/>
+          <rect x="5" y="9" width="1" height="1" fill="#2f6fed"/>
+          <rect x="6" y="9" width="1" height="1" fill="#2f6fed"/>
+          <rect x="7" y="9" width="1" height="1" fill="#2f6fed"/>
+          <rect x="8" y="9" width="1" height="1" fill="#2f6fed"/>
+          <rect x="9" y="9" width="1" height="1" fill="#2f6fed"/>
+          <rect x="2" y="8" width="1" height="1" fill="#2f6fed"/>
+          <rect x="9" y="8" width="1" height="1" fill="#2f6fed"/>
+          <rect x="4" y="1" width="1" height="1" fill="#1b1f24"/>
+          <rect x="5" y="0" width="1" height="1" fill="#1b1f24"/>
+          <rect x="7" y="1" width="1" height="1" fill="#1b1f24"/>
+          <rect x="6" y="0" width="1" height="1" fill="#1b1f24"/>
+          <rect x="4" y="2" width="1" height="1" fill="#1b1f24"/>
+          <rect x="7" y="2" width="1" height="1" fill="#1b1f24"/>
+          <rect x="4" y="3" width="1" height="1" fill="#1b1f24"/>
+          <rect x="7" y="3" width="1" height="1" fill="#1b1f24"/>
+          <rect x="4" y="4" width="1" height="1" fill="#1b1f24"/>
+          <rect x="7" y="4" width="1" height="1" fill="#1b1f24"/>
+          <rect x="2" y="5" width="1" height="1" fill="#1b1f24"/>
+          <rect x="3" y="6" width="1" height="1" fill="#1b1f24"/>
+          <rect x="3" y="4" width="1" height="1" fill="#1b1f24"/>
+          <rect x="9" y="5" width="1" height="1" fill="#1b1f24"/>
+          <rect x="8" y="6" width="1" height="1" fill="#1b1f24"/>
+          <rect x="8" y="4" width="1" height="1" fill="#1b1f24"/>
+          <rect x="4" y="7" width="1" height="1" fill="#1b1f24"/>
+          <rect x="7" y="7" width="1" height="1" fill="#1b1f24"/>
+          <rect x="5" y="8" width="1" height="1" fill="#1b1f24"/>
+          <rect x="6" y="8" width="1" height="1" fill="#1b1f24"/>
+          <rect x="1" y="9" width="1" height="1" fill="#1b1f24"/>
+          <rect x="2" y="10" width="1" height="1" fill="#1b1f24"/>
+          <rect x="3" y="10" width="1" height="1" fill="#1b1f24"/>
+          <rect x="3" y="8" width="1" height="1" fill="#1b1f24"/>
+          <rect x="4" y="10" width="1" height="1" fill="#1b1f24"/>
+          <rect x="4" y="8" width="1" height="1" fill="#1b1f24"/>
+          <rect x="5" y="10" width="1" height="1" fill="#1b1f24"/>
+          <rect x="6" y="10" width="1" height="1" fill="#1b1f24"/>
+          <rect x="7" y="10" width="1" height="1" fill="#1b1f24"/>
+          <rect x="7" y="8" width="1" height="1" fill="#1b1f24"/>
+          <rect x="8" y="10" width="1" height="1" fill="#1b1f24"/>
+          <rect x="8" y="8" width="1" height="1" fill="#1b1f24"/>
+          <rect x="10" y="9" width="1" height="1" fill="#1b1f24"/>
+          <rect x="9" y="10" width="1" height="1" fill="#1b1f24"/>
+          <rect x="1" y="8" width="1" height="1" fill="#1b1f24"/>
+          <rect x="2" y="7" width="1" height="1" fill="#1b1f24"/>
+          <rect x="10" y="8" width="1" height="1" fill="#1b1f24"/>
+          <rect x="9" y="7" width="1" height="1" fill="#1b1f24"/>
         </svg>
       </div>
       <div>
-        <div class="htitle">LOADOUT</div>
+        <div class="htitle">Loadout</div>
         <div class="htag">Browser Companion</div>
       </div>
     </div>
@@ -114,8 +104,8 @@
         these:
       </div>
       <div class="actrow">
-        <button id="pair-btn" class="pairbtn2" type="button" disabled>PAIR MANUALLY</button>
-        <button id="forget-btn" class="forgetbtn" type="button">FORGET PAIRING</button>
+        <button id="pair-btn" class="pairbtn2" type="button" disabled>Pair manually</button>
+        <button id="forget-btn" class="forgetbtn" type="button">Forget pairing</button>
       </div>
       <p id="pair-error" class="msg error"></p>
       <p id="forget-status" class="msg"></p>

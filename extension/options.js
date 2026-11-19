@@ -124,7 +124,7 @@ async function initOptionsPage() {
   const forgetBtn = document.getElementById('forget-btn');
   const forgetStatusEl = document.getElementById('forget-status');
 
-  // Visual state only -- the button's label always stays "PAIR MANUALLY"
+  // Visual state only -- the button's label always stays "Pair manually"
   // (the status card above already conveys paired/connected state), it just
   // disables/dims itself once a token is stored.
   const refreshPairButton = async () => {
@@ -132,11 +132,11 @@ async function initOptionsPage() {
     pairBtn.disabled = !!dmToken;
   };
 
-  // "FIELD CONNECTED" must mean the thing a user clicking FORGET PAIRING
+  // "Connected" must mean the thing a user clicking "Forget pairing"
   // right above it expects it to mean: are we actually paired right now.
   // Checking only `checkAppRunning()` (the app process being reachable at
-  // all) made this card show "FIELD CONNECTED" even the instant after
-  // FORGET PAIRING cleared the stored token -- confusing, since nothing
+  // all) made this card show "Connected" even the instant after
+  // "Forget pairing" cleared the stored token -- confusing, since nothing
   // about the status card reacted to the button directly below it. A
   // missing token still auto-pairs invisibly on the next download/extract
   // (see `ensurePaired()`), so this never blocks that; it only makes the
@@ -145,7 +145,7 @@ async function initOptionsPage() {
     const running = await checkAppRunning();
     const { dmToken } = await chrome.storage.local.get('dmToken');
     const connected = running && !!dmToken;
-    statusEl.textContent = connected ? 'FIELD CONNECTED' : 'FIELD NOT CONNECTED';
+    statusEl.textContent = connected ? 'Connected to the app' : 'Not connected';
     statusEl.classList.toggle('off', !connected);
     statusDotEl.classList.toggle('off', !connected);
   };
@@ -155,7 +155,7 @@ async function initOptionsPage() {
 
   // `refreshStatus()` otherwise only reruns on a `dmToken` change (below)
   // or this page's own initial load -- neither fires when the APP quits
-  // or starts while this page just sits open, so "FIELD CONNECTED" could
+  // or starts while this page just sits open, so "Connected to the app" could
   // go stale (stay connected after the app was closed, or stay
   // disconnected after it was reopened) until the page was manually
   // reloaded. Polled, not event-driven, because there's no event for
