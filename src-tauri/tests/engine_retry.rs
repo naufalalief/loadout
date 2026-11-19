@@ -3,11 +3,11 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::time::{Duration, Instant};
 
-use loadout_farm_log::download::engine::download_segmented;
-use loadout_farm_log::download::limiter::SpeedLimiter;
-use loadout_farm_log::download::retry::retry_with_backoff;
-use loadout_farm_log::download::segments::part_path;
-use loadout_farm_log::download::types::{CancelToken, DownloadError, DownloadRequest, ProbeInfo};
+use loadout::download::engine::download_segmented;
+use loadout::download::limiter::SpeedLimiter;
+use loadout::download::retry::retry_with_backoff;
+use loadout::download::segments::part_path;
+use loadout::download::types::{CancelToken, DownloadError, DownloadRequest, ProbeInfo};
 
 use wiremock::{Mock, MockServer, ResponseTemplate, matchers::method};
 
@@ -203,7 +203,7 @@ fn tempfile_dir() -> std::path::PathBuf {
 /// while a `503` is retried.
 #[tokio::test]
 async fn retry_with_backoff_skips_permanent_errors_but_retries_transient_ones() {
-    use loadout_farm_log::download::retry::is_retryable;
+    use loadout::download::retry::is_retryable;
 
     assert!(!is_retryable(&DownloadError::ServerError(404)));
     assert!(!is_retryable(&DownloadError::ServerError(403)));
@@ -245,7 +245,7 @@ async fn retry_with_backoff_skips_permanent_errors_but_retries_transient_ones() 
 /// second) retry backoff must be noticed promptly, not after the delay.
 #[tokio::test]
 async fn retry_backoff_sleep_is_interrupted_by_cancellation() {
-    use loadout_farm_log::download::retry::retry_with_backoff_cancelable;
+    use loadout::download::retry::retry_with_backoff_cancelable;
 
     let cancel = CancelToken::new();
     let cancel_later = cancel.clone();

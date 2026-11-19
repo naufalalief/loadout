@@ -1,6 +1,6 @@
-# LOADOUT Farm Log browser extension
+# Loadout browser extension
 
-This folder contains the Manifest V3 browser extension that sends downloads from Chrome or Edge to the LOADOUT Farm Log desktop app.
+This folder contains the Manifest V3 browser extension that sends downloads from Chrome or Edge to the Loadout desktop app.
 
 ## Installing (sideload)
 
@@ -14,7 +14,7 @@ The folder to load is `extension/` in the repository root: the folder that direc
 2. Turn on **Developer mode** (toggle in the top-right corner of the page).
 3. Click **Load unpacked**.
 4. Select the `extension/` folder inside the repository (the one containing `manifest.json`).
-5. The **LOADOUT Farm Log** extension appears in the list. Make sure it is enabled.
+5. The **Loadout** extension appears in the list. Make sure it is enabled.
 
 ### Edge
 
@@ -22,11 +22,11 @@ The folder to load is `extension/` in the repository root: the folder that direc
 2. Turn on **Developer mode** (toggle in the left sidebar or the page, depending on your Edge version).
 3. Click **Load unpacked**.
 4. Select the `extension/` folder inside the repository (the one containing `manifest.json`).
-5. The **LOADOUT Farm Log** extension appears in the list. Make sure it is enabled.
+5. The **Loadout** extension appears in the list. Make sure it is enabled.
 
 Browser menus and labels change between versions. If the exact wording differs, look for the equivalent options: a "Developer mode" toggle and a "Load unpacked" button.
 
-Pairing happens automatically the first time you trigger a download or a video extraction -- there is no manual "Pair" step to do first. The **LOADOUT Farm Log desktop app must already be running** for that first auto-pair attempt to succeed, and needs to be running for the handoff to work at all afterwards (a stopped app just means every download falls back to the browser's normal, native download -- nothing is lost, but nothing gets handed off either). The options page still has a manual **Pair** button as a fallback -- useful if the app wasn't running yet the first time, so auto-pairing couldn't happen; click it once the app is running and it does the same thing immediately.
+Pairing happens automatically the first time you trigger a download or a video extraction -- there is no manual "Pair" step to do first. The **Loadout desktop app must already be running** for that first auto-pair attempt to succeed, and needs to be running for the handoff to work at all afterwards (a stopped app just means every download falls back to the browser's normal, native download -- nothing is lost, but nothing gets handed off either). The options page still has a manual **Pair** button as a fallback -- useful if the app wasn't running yet the first time, so auto-pairing couldn't happen; click it once the app is running and it does the same thing immediately.
 
 More than one browser profile can be paired with the app at once (each gets its own entry under Settings -> **Paired browsers**). Zero-click auto-pairing only ever applies to the very first browser profile the app has ever seen, though -- every profile after that needs the app's Settings -> **Allow new pairing** clicked first (it stays open for 2 minutes), *then* that profile's own first download/extraction, or its options page's **Pair** button, to actually pair. Trying to pair without that window open fails with a "Pairing is closed" message telling you exactly where to click.
 
@@ -34,7 +34,7 @@ If **Load unpacked** fails (e.g. `manifest.json` is missing or invalid, or you s
 
 ## Updating after code changes
 
-After you change files in `extension/`, open the extensions page and click the reload (circular arrow) icon on the **LOADOUT Farm Log** card. Then reload any tabs you were testing with.
+After you change files in `extension/`, open the extensions page and click the reload (circular arrow) icon on the **Loadout** card. Then reload any tabs you were testing with.
 
 ## Reset pairing
 
@@ -43,7 +43,7 @@ Each paired browser profile gets its own token, remembered across app restarts i
 There are two ways to clean up a stale entry, or recover a working pairing, depending on what's still available to you:
 
 1. **The old extension install is still loaded and usable, and the app is running.** Open its options page and click **Forget pairing**. This calls the app's `/unpair` with the token it still holds, which removes just that one profile's entry, then clears the token from that extension install's own storage.
-2. **The old extension install is gone, or the app wasn't running when you tried step 1.** Clean it up from the app's side instead: open LOADOUT Farm Log -> Settings -> **Paired browsers**, find the stale entry (it's safe to tell them apart by when each was paired, or rename one first from whichever extension install is still open, if any), and click its **FORGET** button.
+2. **The old extension install is gone, or the app wasn't running when you tried step 1.** Clean it up from the app's side instead: open Loadout -> Settings -> **Paired browsers**, find the stale entry (it's safe to tell them apart by when each was paired, or rename one first from whichever extension install is still open, if any), and click its **Forget** button.
 
 Either way, pairing the browser profile you actually want to use again needs a pairing window open for it first (Settings -> **Allow new pairing**, unless it's the very first browser profile this install of the app has ever paired) -- then the next download/extraction, or that profile's own options page **Pair** button, picks it up.
 

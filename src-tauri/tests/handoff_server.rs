@@ -2,10 +2,10 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 
-use loadout_farm_log::download::queue::QueueManager;
-use loadout_farm_log::download::types::{DownloadInfo, DownloadStatus};
-use loadout_farm_log::extract::jobs::ExtractJobManager;
-use loadout_farm_log::server::{PairingState, router_for_port};
+use loadout::download::queue::QueueManager;
+use loadout::download::types::{DownloadInfo, DownloadStatus};
+use loadout::extract::jobs::ExtractJobManager;
+use loadout::server::{PairingState, router_for_port};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use wiremock::matchers::{any, header};
 use wiremock::{Mock, MockServer, ResponseTemplate};
