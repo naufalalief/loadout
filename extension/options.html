@@ -2,123 +2,33 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>LOADOUT — Extension Options</title>
+  <title>Courier — Extension Options</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;1,500&display=swap">
   <link rel="stylesheet" href="options.css">
 </head>
 <body>
   <div class="page">
-    <div class="header">
-      <div class="headicon">
-        <svg class="sprite" width="34" height="34" viewBox="0 0 12 12" shape-rendering="crispEdges">
-          <!-- appCells: same literal cell data as content.js's APP_CELLS
-               (pot + sprout), ported from src/icons.js's appCells
-               (= potCells.concat(plantCells)), generated there by
-               buildIcon. Keep in sync with both if that shape ever
-               changes. -->
-          <rect x="3" y="8" width="1" height="1" fill="#e8a878"/>
-          <rect x="4" y="8" width="1" height="1" fill="#c9793e"/>
-          <rect x="5" y="8" width="1" height="1" fill="#c9793e"/>
-          <rect x="6" y="8" width="1" height="1" fill="#c9793e"/>
-          <rect x="7" y="8" width="1" height="1" fill="#c9793e"/>
-          <rect x="8" y="8" width="1" height="1" fill="#8a4f24"/>
-          <rect x="3" y="9" width="1" height="1" fill="#e8a878"/>
-          <rect x="4" y="9" width="1" height="1" fill="#c9793e"/>
-          <rect x="5" y="9" width="1" height="1" fill="#c9793e"/>
-          <rect x="6" y="9" width="1" height="1" fill="#c9793e"/>
-          <rect x="7" y="9" width="1" height="1" fill="#c9793e"/>
-          <rect x="8" y="9" width="1" height="1" fill="#8a4f24"/>
-          <rect x="4" y="10" width="1" height="1" fill="#e8a878"/>
-          <rect x="5" y="10" width="1" height="1" fill="#c9793e"/>
-          <rect x="6" y="10" width="1" height="1" fill="#c9793e"/>
-          <rect x="7" y="10" width="1" height="1" fill="#8a4f24"/>
-          <rect x="2" y="8" width="1" height="1" fill="#3a2410"/>
-          <rect x="3" y="7" width="1" height="1" fill="#3a2410"/>
-          <rect x="4" y="7" width="1" height="1" fill="#3a2410"/>
-          <rect x="5" y="7" width="1" height="1" fill="#3a2410"/>
-          <rect x="6" y="7" width="1" height="1" fill="#3a2410"/>
-          <rect x="7" y="7" width="1" height="1" fill="#3a2410"/>
-          <rect x="9" y="8" width="1" height="1" fill="#3a2410"/>
-          <rect x="8" y="7" width="1" height="1" fill="#3a2410"/>
-          <rect x="2" y="9" width="1" height="1" fill="#3a2410"/>
-          <rect x="3" y="10" width="1" height="1" fill="#3a2410"/>
-          <rect x="9" y="9" width="1" height="1" fill="#3a2410"/>
-          <rect x="8" y="10" width="1" height="1" fill="#3a2410"/>
-          <rect x="4" y="11" width="1" height="1" fill="#3a2410"/>
-          <rect x="5" y="11" width="1" height="1" fill="#3a2410"/>
-          <rect x="6" y="11" width="1" height="1" fill="#3a2410"/>
-          <rect x="7" y="11" width="1" height="1" fill="#3a2410"/>
-          <rect x="5" y="4" width="1" height="1" fill="#b8e89a"/>
-          <rect x="6" y="4" width="1" height="1" fill="#2f6b22"/>
-          <rect x="5" y="5" width="1" height="1" fill="#b8e89a"/>
-          <rect x="6" y="5" width="1" height="1" fill="#2f6b22"/>
-          <rect x="5" y="6" width="1" height="1" fill="#b8e89a"/>
-          <rect x="6" y="6" width="1" height="1" fill="#2f6b22"/>
-          <rect x="5" y="7" width="1" height="1" fill="#b8e89a"/>
-          <rect x="6" y="7" width="1" height="1" fill="#2f6b22"/>
-          <rect x="2" y="3" width="1" height="1" fill="#b8e89a"/>
-          <rect x="3" y="2" width="1" height="1" fill="#b8e89a"/>
-          <rect x="3" y="3" width="1" height="1" fill="#5aa83c"/>
-          <rect x="4" y="2" width="1" height="1" fill="#5aa83c"/>
-          <rect x="9" y="3" width="1" height="1" fill="#2f6b22"/>
-          <rect x="8" y="2" width="1" height="1" fill="#2f6b22"/>
-          <rect x="8" y="3" width="1" height="1" fill="#5aa83c"/>
-          <rect x="7" y="2" width="1" height="1" fill="#5aa83c"/>
-          <rect x="4" y="4" width="1" height="1" fill="#3a2410"/>
-          <rect x="5" y="3" width="1" height="1" fill="#3a2410"/>
-          <rect x="7" y="4" width="1" height="1" fill="#3a2410"/>
-          <rect x="6" y="3" width="1" height="1" fill="#3a2410"/>
-          <rect x="4" y="5" width="1" height="1" fill="#3a2410"/>
-          <rect x="7" y="5" width="1" height="1" fill="#3a2410"/>
-          <rect x="4" y="6" width="1" height="1" fill="#3a2410"/>
-          <rect x="7" y="6" width="1" height="1" fill="#3a2410"/>
-          <rect x="4" y="7" width="1" height="1" fill="#3a2410"/>
-          <rect x="5" y="8" width="1" height="1" fill="#3a2410"/>
-          <rect x="7" y="7" width="1" height="1" fill="#3a2410"/>
-          <rect x="6" y="8" width="1" height="1" fill="#3a2410"/>
-          <rect x="1" y="3" width="1" height="1" fill="#3a2410"/>
-          <rect x="2" y="4" width="1" height="1" fill="#3a2410"/>
-          <rect x="2" y="2" width="1" height="1" fill="#3a2410"/>
-          <rect x="3" y="1" width="1" height="1" fill="#3a2410"/>
-          <rect x="4" y="3" width="1" height="1" fill="#3a2410"/>
-          <rect x="3" y="4" width="1" height="1" fill="#3a2410"/>
-          <rect x="5" y="2" width="1" height="1" fill="#3a2410"/>
-          <rect x="4" y="1" width="1" height="1" fill="#3a2410"/>
-          <rect x="10" y="3" width="1" height="1" fill="#3a2410"/>
-          <rect x="9" y="4" width="1" height="1" fill="#3a2410"/>
-          <rect x="9" y="2" width="1" height="1" fill="#3a2410"/>
-          <rect x="8" y="1" width="1" height="1" fill="#3a2410"/>
-          <rect x="7" y="3" width="1" height="1" fill="#3a2410"/>
-          <rect x="8" y="4" width="1" height="1" fill="#3a2410"/>
-          <rect x="6" y="2" width="1" height="1" fill="#3a2410"/>
-          <rect x="7" y="1" width="1" height="1" fill="#3a2410"/>
-        </svg>
-      </div>
-      <div>
-        <div class="htitle">LOADOUT</div>
-        <div class="htag">Browser Companion</div>
-      </div>
-    </div>
+    <div class="margin"></div>
+    <div class="body">
+      <div class="letterhead"><span class="serif">Courier</span> — browser companion</div>
 
-    <div class="card">
-      <div class="statusrow">
-        <div class="statusdot" id="status-dot"></div>
-        <div class="statustext" id="status">Checking...</div>
-      </div>
-    </div>
+      <div class="status-inline"><span class="dot" id="status-dot"></span><span id="status">Checking…</span></div>
+      <div class="statussub">Things you download, or fetch from a video page, are sent here automatically. If it stops connecting, these still work:</div>
 
-    <div class="card">
-      <div class="note">
-        Pairing happens automatically the first time you download or extract
-        something. If it hasn't connected, or this extension was moved or
-        reinstalled and the app still thinks the old install is paired, use
-        these:
+      <div class="section">Pairing</div>
+      <div class="fields">
+        <div class="field">
+          <div class="flabel">This profile</div>
+          <button type="button" class="fval" id="pair-btn" disabled>Pair manually</button>
+        </div>
+        <div class="field">
+          <div class="flabel">If something's stuck</div>
+          <button type="button" class="fval danger" id="forget-btn">Forget pairing</button>
+        </div>
       </div>
-      <div class="actrow">
-        <button id="pair-btn" class="pairbtn2" type="button" disabled>PAIR MANUALLY</button>
-        <button id="forget-btn" class="forgetbtn" type="button">FORGET PAIRING</button>
-      </div>
-      <p id="pair-error" class="msg error"></p>
-      <p id="forget-status" class="msg"></p>
+      <p id="pair-error" class="error"></p>
+      <p id="forget-status" class="shint"></p>
     </div>
   </div>
   <script src="options.js"></script>
