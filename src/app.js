@@ -159,7 +159,7 @@ const EXTRACT_TERMINAL_STATUSES = ["Completed", "Failed", "Canceled"];
 // Statuses (shared by downloads and extract jobs -- the strings happen to
 // match exactly) that mean no further transfer will ever happen for this
 // row, so the progress bar has nothing left to show. The mockup never
-// shows a bar on a SHIPPED/WITHERED/CANCELED row; the live app kept
+// shows a bar on a Completed/Failed/Canceled row; the live app kept
 // showing one at whatever fill level the transfer last reached.
 const TERMINAL_STATUSES = ["Completed", "Failed", "Canceled"];
 
@@ -187,20 +187,20 @@ function parseSpeedLimit(raw) {
 // from here, replacing today's raw `${status}` interpolation. Exact words
 // and tokens, not open to rephrasing.
 const DOWNLOAD_BADGE = {
-  Downloading: ["WORKING", "var(--stamina)"],
-  Paused: ["RESTING", "var(--ink-dim)"],
-  Queued: ["WAITING", "var(--ink-dim)"],
-  Completed: ["SHIPPED", "var(--leaf)"],
-  Failed: ["WITHERED", "var(--berry)"],
-  Canceled: ["CANCELED", "var(--ink-dim)"],
+  Downloading: ["Downloading", "var(--accent)"],
+  Paused: ["Paused", "var(--ink-dim)"],
+  Queued: ["Queued", "var(--ink-dim)"],
+  Completed: ["Completed", "var(--success)"],
+  Failed: ["Failed", "var(--danger)"],
+  Canceled: ["Canceled", "var(--ink-dim)"],
 };
 const EXTRACT_BADGE = {
-  Probing: ["SCOUTING", "var(--wood-dark)"],
-  Downloading: ["WORKING", "var(--stamina)"],
-  AwaitingFormatChoice: ["AWAITING", "var(--rp)"],
-  Completed: ["SHIPPED", "var(--leaf)"],
-  Failed: ["WITHERED", "var(--berry)"],
-  Canceled: ["CANCELED", "var(--ink-dim)"],
+  Probing: ["Fetching info", "var(--ink-dim)"],
+  Downloading: ["Downloading", "var(--accent)"],
+  AwaitingFormatChoice: ["Choose a quality", "var(--warn)"],
+  Completed: ["Completed", "var(--success)"],
+  Failed: ["Failed", "var(--danger)"],
+  Canceled: ["Canceled", "var(--ink-dim)"],
 };
 
 // Picks a row's per-file-type `.slot` icon from its filename's extension
@@ -350,7 +350,7 @@ function createRow(item) {
   if (isExtract) {
     const ptitle = document.createElement("div");
     ptitle.className = "ptitle";
-    ptitle.textContent = "PICK A SIZE";
+    ptitle.textContent = "Choose a quality";
     const pickList = document.createElement("div");
     pickList.className = "picklist";
     popover.appendChild(ptitle);
@@ -363,7 +363,7 @@ function createRow(item) {
     // from an always-visible inline input+button into this popover.
     const ptitle = document.createElement("div");
     ptitle.className = "ptitle";
-    ptitle.textContent = "SPEED LIMIT";
+    ptitle.textContent = "Speed limit";
     const prow = document.createElement("div");
     prow.className = "prow";
     const limitInput = document.createElement("input");
@@ -374,7 +374,7 @@ function createRow(item) {
     const limitButton = document.createElement("button");
     limitButton.type = "button";
     limitButton.className = "actbtn";
-    limitButton.textContent = "SET";
+    limitButton.textContent = "Set";
     limitButton.title = "Apply this speed limit";
     limitButton.addEventListener("click", async () => {
       limitButton.disabled = true;
@@ -432,34 +432,35 @@ function actionsForDownload(download, els) {
   const id = download.id;
   const actions = [];
   if (download.status === "Downloading") {
-    actions.push({ kind: "invoke", label: "REST", onClick: () => invoke("pause_download", { id }) });
+    actions.push({ kind: "invoke", label: "Pause", onClick: () => invoke("pause_download", { id }) });
   }
   if (download.status === "Paused") {
-    actions.push({ kind: "invoke", label: "WORK", onClick: () => invoke("resume_download", { id }) });
+    actions.push({ kind: "invoke", label: "Resume", onClick: () => invoke("resume_download", { id }) });
   }
   if (download.status === "Failed") {
-    actions.push({ kind: "invoke", label: "REPLANT", onClick: () => invoke("retry_download", { id }) });
+    actions.push({ kind: "invoke", label: "Retry", onClick: () => invoke("retry_download", { id }) });
   }
   // Today's exact `limitable` rule, unchanged: every status except
   // Completed/Canceled -- this is the gate the plan's Review Focus calls
   // out by name, so it must keep matching `updateDownloadRow`'s historical
   // behavior precisely, not the mockup's example rows (which happen not to
-  // show LIMIT on a Failed row, even though Failed is "limitable" here).
+  // show Limit on a Failed row, even though Failed is "limitable" here).
   const limitable = !["Completed", "Canceled"].includes(download.status);
   if (limitable) {
-    actions.push({ kind: "toggle", label: "LIMIT", popover: els.popover });
+    actions.push({ kind: "toggle", label: "Limit", popover: els.popover });
   }
   if (["Queued", "Downloading", "Paused"].includes(download.status)) {
-    actions.push({ kind: "invoke", label: "✕", onClick: () => invoke("cancel_download", { id }), danger: true });
+    actions.push({ kind: "invoke", label: "Cancel", onClick: () => invoke("cancel_download", { id }), danger: true });
   }
-  // PULL used to show unconditionally, on every status -- including while
-  // a download was actively WORKING, letting it be removed from the list
-  // mid-transfer with no cancel step at all. Gated to terminal statuses
-  // now, same as extract jobs' PULL (EXTRACT_TERMINAL_STATUSES) below.
+  // Remove used to show unconditionally, on every status -- including
+  // while a download was actively downloading, letting it be removed from
+  // the list mid-transfer with no cancel step at all. Gated to terminal
+  // statuses now, same as extract jobs' Remove (EXTRACT_TERMINAL_STATUSES)
+  // below.
   if (TERMINAL_STATUSES.includes(download.status)) {
     actions.push({
       kind: "invoke",
-      label: "PULL",
+      label: "Remove",
       onClick: () => removeDownload(download),
       danger: download.status === "Failed",
     });
@@ -470,24 +471,25 @@ function actionsForDownload(download, els) {
 // Extract jobs only ever get Cancel (while a subprocess could still be
 // running), Retry (once Failed), and Remove (once in any terminal status)
 // -- never Pause/Resume (yt-dlp can't be paused mid-probe/download).
-// Extract rows never get a LIMIT action/popover -- no backend command
+// Extract rows never get a Limit action/popover -- no backend command
 // exists for an extract job's speed. `AwaitingFormatChoice` (which is also
-// one of `EXTRACT_CANCELABLE_STATUSES`) additionally gets PICK ▾, replacing
-// today's inline `<select>` + "Download" button with this row's popover.
+// one of `EXTRACT_CANCELABLE_STATUSES`) additionally gets Choose ▾,
+// replacing today's inline `<select>` + "Download" button with this row's
+// popover.
 function actionsForExtract(job, els) {
   const id = job.id;
   const actions = [];
   if (job.status === "AwaitingFormatChoice") {
-    actions.push({ kind: "toggle", label: "PICK ▾", popover: els.popover });
+    actions.push({ kind: "toggle", label: "Choose ▾", popover: els.popover });
   }
   if (EXTRACT_CANCELABLE_STATUSES.includes(job.status)) {
-    actions.push({ kind: "invoke", label: "✕", onClick: () => invoke("cancel_extract_job", { id }), danger: true });
+    actions.push({ kind: "invoke", label: "Cancel", onClick: () => invoke("cancel_extract_job", { id }), danger: true });
   }
   if (job.status === "Failed") {
-    actions.push({ kind: "invoke", label: "REPLANT", onClick: () => invoke("retry_extract_job", { id }) });
+    actions.push({ kind: "invoke", label: "Retry", onClick: () => invoke("retry_extract_job", { id }) });
   }
   if (EXTRACT_TERMINAL_STATUSES.includes(job.status)) {
-    actions.push({ kind: "invoke", label: "PULL", onClick: () => invoke("remove_extract_job", { id }) });
+    actions.push({ kind: "invoke", label: "Remove", onClick: () => invoke("remove_extract_job", { id }) });
   }
   return actions;
 }
@@ -528,7 +530,7 @@ function contextMenuItemsFor(item) {
   const statusGroup = [];
   if (isExtract) {
     if (item.status === "Failed") {
-      statusGroup.push({ label: "Replant (retry)", onClick: () => invoke("retry_extract_job", { id }) });
+      statusGroup.push({ label: "Retry", onClick: () => invoke("retry_extract_job", { id }) });
     }
     if (EXTRACT_CANCELABLE_STATUSES.includes(item.status)) {
       statusGroup.push({ label: "Cancel", danger: true, onClick: () => invoke("cancel_extract_job", { id }) });
@@ -541,7 +543,7 @@ function contextMenuItemsFor(item) {
       statusGroup.push({ label: "Resume", onClick: () => invoke("resume_download", { id }) });
     }
     if (item.status === "Failed") {
-      statusGroup.push({ label: "Replant (retry)", onClick: () => invoke("retry_download", { id }) });
+      statusGroup.push({ label: "Retry", onClick: () => invoke("retry_download", { id }) });
     }
     if (["Queued", "Downloading", "Paused"].includes(item.status)) {
       statusGroup.push({ label: "Cancel", danger: true, onClick: () => invoke("cancel_download", { id }) });
@@ -678,7 +680,7 @@ function updateDownloadRow(els, download) {
   els.stambarFill.style.width = `${pct ?? 0}%`;
   els.stambarOuter.classList.toggle("indeterminate", pct == null);
   els.stambarOuter.classList.toggle("hidden", TERMINAL_STATUSES.includes(download.status));
-  // Paused (RESTING) rows render the fill in `--ink-dim` (spec Appendix A
+  // Paused rows render the fill in `--ink-dim` (spec Appendix A
   // mockup row) so a paused download reads visually distinct from an
   // actively-downloading one; every other status keeps the CSS default
   // (`--stamina`, set on `.stambar-fill` itself) by clearing the inline
@@ -960,26 +962,26 @@ function handleStatusTransition(rowId, els, item) {
   }
 }
 
-// Status bar text (spec Appendix A/B): "<N> TASKS" / "<M> WORKING" normally,
-// or "0 TASKS" / "FIELD IS QUIET" when the merged list is empty. `WORKING`
-// is the badge word both `DOWNLOAD_BADGE.Downloading` and
-// `EXTRACT_BADGE.Downloading` map to (Task 5) -- the only status either
-// mapping gives that word, so counting `status === "Downloading"` directly
-// here matches it without needing that mapping object to exist yet.
+// Status bar text: "<N> downloads" / "<M> active" normally, or
+// "0 downloads" / "No active downloads" when the merged list is empty.
+// "Downloading" is the badge word both `DOWNLOAD_BADGE.Downloading` and
+// `EXTRACT_BADGE.Downloading` map to -- the only status either mapping
+// gives that word, so counting `status === "Downloading"` directly here
+// matches it without needing that mapping object to exist yet.
 //
-// "TASK"/"TASKS" is a countable noun, so it's singular for exactly 1
-// ("1 TASK") and plural otherwise ("0 TASKS"/"2 TASKS"), rather than always
-// appending the plural noun. "WORKING" is a status word, not a countable
-// noun (there's no singular/plural form of "working"), so it's never
-// pluralized -- "1 WORKING" and "2 WORKING" are both already correct.
+// "download"/"downloads" is a countable noun, so it's singular for
+// exactly 1 ("1 download") and plural otherwise ("0 downloads"/
+// "2 downloads"), rather than always appending the plural noun. "active"
+// is a status word, not a countable noun, so it's never pluralized --
+// "1 active" and "2 active" are both already correct.
 function updateStatusBar(items) {
   const n = items.length;
-  statusTasksEl.textContent = `${n} ${n === 1 ? "TASK" : "TASKS"}`;
+  statusTasksEl.textContent = `${n} ${n === 1 ? "download" : "downloads"}`;
   if (n === 0) {
-    statusWorkingEl.textContent = "FIELD IS QUIET";
+    statusWorkingEl.textContent = "No active downloads";
   } else {
     const working = items.filter((item) => item.status === "Downloading").length;
-    statusWorkingEl.textContent = `${working} WORKING`;
+    statusWorkingEl.textContent = `${working} active`;
   }
 }
 
@@ -1008,9 +1010,9 @@ async function refreshList() {
   const isEmpty = items.length === 0;
   emptyStateEl.classList.toggle("hidden", !isEmpty);
   queueListEl.classList.toggle("hidden", isEmpty);
-  // The empty state has its own "+ NEW CROP" button -- showing the addrow
-  // above the list too, on top of it, is a redundant second way to do the
-  // exact same thing while the field is empty.
+  // The empty state has its own "+ Add download" button -- showing the
+  // addrow above the list too, on top of it, is a redundant second way to
+  // do the exact same thing while the list is empty.
   addrowBtn.classList.toggle("hidden", isEmpty);
   updateStatusBar(items);
 
@@ -1180,7 +1182,7 @@ async function refreshPairedProfiles() {
       const forget = document.createElement("button");
       forget.type = "button";
       forget.className = "changebtn danger";
-      forget.textContent = "FORGET";
+      forget.textContent = "Forget";
       forget.addEventListener("click", async () => {
         const confirmed = window.confirm(
           `Forget "${profile.label}"? That browser will need to pair again before it can send downloads here.`,
@@ -1211,7 +1213,7 @@ function formatCountdown(totalSeconds) {
   return `${minutes}:${String(seconds).padStart(2, "0")}`;
 }
 
-// Drives the "ALLOW NEW PAIRING" button's live countdown from `remaining`
+// Drives the "Allow" button's live countdown from `remaining`
 // seconds down to 0, ticking once a second -- called both right after the
 // button is clicked (with the duration `allow_new_pairing` itself just
 // opened) and when the Settings panel is reopened while an earlier click's
@@ -1276,7 +1278,7 @@ shedBtn.addEventListener("click", async () => {
   }
 });
 
-// BROWSE opens the OS's native folder picker (commands::pick_download_folder)
+// Change opens the OS's native folder picker (commands::pick_download_folder)
 // instead of the field taking typed paths -- `settings-download-dir` is
 // `readonly` now. `null` covers the user canceling the dialog, which must
 // leave the field exactly as it was, not clear it.
@@ -1345,7 +1347,7 @@ document.getElementById("settings-panel-close").addEventListener("click", () => 
 });
 
 // Opens the Browser Companion Setup Guide popup -- the Settings panel's own
-// "SET UP" row button, same openPanel pattern as shedBtn opening Settings
+// "Set up" row button, same openPanel pattern as shedBtn opening Settings
 // itself. Settings is closed first so the two popups' dimmed `.panel`
 // backdrops never stack (there's no scenario where seeing both at once is
 // useful, and nothing else in this codebase layers one popup over another).
@@ -1371,7 +1373,7 @@ document.getElementById("setup-done-btn").addEventListener("click", () => {
   closePanel(browserSetupPanelEl);
 });
 
-// "OPEN PAGE" -- copies chrome://extensions to the clipboard via the real
+// "Open page" -- copies chrome://extensions to the clipboard via the real
 // `open_extensions_page` command (Task 3's backend). That command is
 // clipboard-only on purpose: chrome://extensions has no registered OS
 // protocol handler on a typical system, so attempting to open it would be
@@ -1394,7 +1396,7 @@ setupOpenPageBtn.addEventListener("click", async () => {
   }
 });
 
-// "OPEN FOLDER" -- opens the bundled extension/ folder (Task 3's backend
+// "Open folder" -- opens the bundled extension/ folder (Task 3's backend
 // resolves it via the resource-directory API) in the OS file explorer. A
 // successful open is its own confirmation (the explorer window appearing),
 // so only a failure needs an inline message here.
