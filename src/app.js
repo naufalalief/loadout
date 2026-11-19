@@ -763,11 +763,26 @@ async function refreshPairedProfiles() {
       const label = document.createElement("div");
       label.className = "flabel";
       label.textContent = `Paired ${formatPairedAt(profile.paired_at)}`;
-      const val = document.createElement("div");
-      val.className = "fval";
-      const name = document.createElement("span");
-      name.className = "name";
+      const row = document.createElement("div");
+      row.className = "profile-row";
+      const name = document.createElement("button");
+      name.type = "button";
+      name.className = "fval";
       name.textContent = profile.label;
+      makeInlineEditable(name, {
+        getValue: () => profile.label,
+        parse: (raw) => raw.trim(),
+        commit: async (value) => {
+          if (!value || value === profile.label) return;
+          try {
+            await invoke("rename_paired_profile", { id: profile.id, label: value });
+            profile.label = value;
+          } catch (err) {
+            console.error("rename_paired_profile failed:", err);
+          }
+          name.textContent = profile.label;
+        },
+      });
       const forget = document.createElement("span");
       forget.className = "forget";
       forget.textContent = "Forget";
@@ -784,8 +799,8 @@ async function refreshPairedProfiles() {
         }
         await refreshPairedProfiles();
       });
-      val.append(name, forget);
-      field.append(label, val);
+      row.append(name, forget);
+      field.append(label, row);
       return field;
     }),
   );

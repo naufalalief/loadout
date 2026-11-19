@@ -69,9 +69,9 @@ The extension is sideloaded (not published to the Chrome Web Store). See [`exten
 ## 📖 Usage
 
 1. Launch Courier — it starts in the system tray and opens its window on first run.
-2. **Add Download** to queue a direct URL, or just browse normally with the extension installed: downloads you click are captured automatically.
-3. Open **Settings** to set the download folder, concurrency limit, and a default speed limit.
-4. On a video page (YouTube, etc.), hover the video and click the **Download** button that appears; pick a resolution in the app's queue to start the download.
+2. Paste a direct URL into the line above the ledger and press enter, or just browse normally with the extension installed: downloads you click are captured automatically.
+3. Open **Settings** (top right of the ledger) to set the download folder, concurrency limit, and a default speed limit.
+4. On a video page (YouTube, etc.), hover the video and click the small seal that appears in its corner; pick a resolution in the ledger to start the download.
 
 ## 📁 Project Structure
 
@@ -79,7 +79,7 @@ The extension is sideloaded (not published to the Chrome Web Store). See [`exten
 courier/                    # repo directory name; app itself is Courier
 ├─ src/                     # Desktop app frontend (plain HTML/CSS/JS, no build step)
 │  ├─ index.html
-│  ├─ app.js                # Queue rendering, polling, Add/Settings panels
+│  ├─ app.js                # Ledger rendering, polling, Settings/setup pages
 │  └─ styles.css
 ├─ src-tauri/                # Rust backend
 │  ├─ src/

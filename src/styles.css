@@ -489,14 +489,23 @@ body {
   outline: none;
   width: 100%;
 }
-.field .forget {
-  display: none;
+/* A paired browser's field: its name is click-to-rename (reuses .fval),
+   "Forget" sits beside it as a small, always-visible action -- this is
+   Settings, not the dense ledger, so there's no need to hide it behind
+   a hover before it's discoverable. */
+.profile-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
 }
-.field:hover .name {
-  display: none;
+.profile-row .forget {
+  font-size: 11px;
+  color: var(--ink-faint);
+  cursor: pointer;
+  flex-shrink: 0;
 }
-.field:hover .forget {
-  display: inline-block;
+.profile-row .forget:hover {
+  color: var(--danger);
 }
 
 /* Setup/guide steps -- quiet numbered field-like blocks, no card/button
