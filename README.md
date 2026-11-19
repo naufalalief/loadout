@@ -1,8 +1,8 @@
 <div align="center">
 
-# LOADOUT Farm Log
+# Courier
 
-A personal, self-hosted download manager for Windows — multi-segment downloads, a browser extension that captures what you click, and a hover-to-download button for YouTube and other `yt-dlp`-supported sites.
+A self-hosted download manager for Windows — multi-segment downloads, a browser extension that captures what you click, and a hover-to-download button for YouTube and other `yt-dlp`-supported sites.
 
 ![Rust](https://img.shields.io/badge/Rust-1.90%2B-orange?logo=rust)
 ![Tauri](https://img.shields.io/badge/Tauri-2-24C8DB?logo=tauri)
@@ -48,8 +48,8 @@ This is a personal hobby project, provided as-is with no warranty (see [LICENSE]
 ### Installation
 
 ```bash
-git clone https://github.com/naufalalief/download-manager.git
-cd download-manager/src-tauri
+git clone https://github.com/naufalalief/loadout.git
+cd loadout/src-tauri
 
 # Run in development mode
 cargo run
@@ -68,7 +68,7 @@ The extension is sideloaded (not published to the Chrome Web Store). See [`exten
 
 ## 📖 Usage
 
-1. Launch LOADOUT Farm Log — it starts in the system tray and opens its window on first run.
+1. Launch Courier — it starts in the system tray and opens its window on first run.
 2. **Add Download** to queue a direct URL, or just browse normally with the extension installed: downloads you click are captured automatically.
 3. Open **Settings** to set the download folder, concurrency limit, and a default speed limit.
 4. On a video page (YouTube, etc.), hover the video and click the **Download** button that appears; pick a resolution in the app's queue to start the download.
@@ -76,7 +76,7 @@ The extension is sideloaded (not published to the Chrome Web Store). See [`exten
 ## 📁 Project Structure
 
 ```
-download-manager/               # repo directory name; app itself is LOADOUT Farm Log
+courier/                    # repo directory name; app itself is Courier
 ├─ src/                     # Desktop app frontend (plain HTML/CSS/JS, no build step)
 │  ├─ index.html
 │  ├─ app.js                # Queue rendering, polling, Add/Settings panels

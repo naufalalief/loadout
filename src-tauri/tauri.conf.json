@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "LOADOUT Farm Log",
+  "productName": "Courier",
   "version": "0.3.0",
-  "identifier": "com.downloadmanager.app",
+  "identifier": "com.naufalalief.courier",
   "build": {
     "frontendDist": "../src"
   },
@@ -10,15 +10,14 @@
     "windows": [
       {
         "label": "main",
-        "title": "LOADOUT FARM LOG",
+        "title": "Courier",
         "visible": false,
         "width": 800,
-        "height": 600,
+        "height": 700,
         "resizable": true,
         "fullscreen": false,
-        "decorations": false,
-        "transparent": true,
-        "shadow": false
+        "decorations": true,
+        "transparent": false
       }
     ],
     "security": {
