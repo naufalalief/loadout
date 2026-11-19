@@ -1,10 +1,10 @@
 [package]
-name = "loadout-farm-log"
+name = "courier"
 version = "0.3.0"
-description = "A personal download manager: multi-segment downloads, browser-extension handoff, and yt-dlp-powered video extraction"
+description = "A download manager: multi-segment downloads, browser-extension handoff, and yt-dlp-powered video extraction"
 authors = ["Naufal Alief"]
 license = "MIT"
-repository = "https://github.com/naufalalief/download-manager"
+repository = "https://github.com/naufalalief/loadout"
 edition = "2024"
 rust-version = "1.90"
 

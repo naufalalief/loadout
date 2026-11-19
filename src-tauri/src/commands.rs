@@ -7,11 +7,11 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use loadout_farm_log::download::queue::QueueManager;
-use loadout_farm_log::download::types::{DownloadInfo, DownloadRequest};
-use loadout_farm_log::extract::binaries::BinaryManager;
-use loadout_farm_log::extract::jobs::{ExtractJobInfo, ExtractJobManager};
-use loadout_farm_log::server::{PAIRING_MODE_DURATION, PairedProfileInfo, PairingState};
+use courier::download::queue::QueueManager;
+use courier::download::types::{DownloadInfo, DownloadRequest};
+use courier::extract::binaries::BinaryManager;
+use courier::extract::jobs::{ExtractJobInfo, ExtractJobManager};
+use courier::server::{PAIRING_MODE_DURATION, PairedProfileInfo, PairingState};
 use tauri::{Manager, State};
 use tauri_plugin_autostart::ManagerExt;
 use tauri_plugin_clipboard_manager::ClipboardExt;

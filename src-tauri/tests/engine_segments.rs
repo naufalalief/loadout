@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use loadout_farm_log::download::engine::download_segmented;
-use loadout_farm_log::download::limiter::SpeedLimiter;
-use loadout_farm_log::download::segments::{part_path, plan_segments, resume_offset};
-use loadout_farm_log::download::types::{CancelToken, DownloadError, DownloadRequest, ProbeInfo};
+use courier::download::engine::download_segmented;
+use courier::download::limiter::SpeedLimiter;
+use courier::download::segments::{part_path, plan_segments, resume_offset};
+use courier::download::types::{CancelToken, DownloadError, DownloadRequest, ProbeInfo};
 
 use wiremock::matchers::{header, method, path};
 use wiremock::{Mock, MockServer, Request, ResponseTemplate};

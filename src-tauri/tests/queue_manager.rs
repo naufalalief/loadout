@@ -2,9 +2,9 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 
-use loadout_farm_log::download::persistence::load_state;
-use loadout_farm_log::download::queue::QueueManager;
-use loadout_farm_log::download::types::{DownloadInfo, DownloadRequest, DownloadStatus};
+use courier::download::persistence::load_state;
+use courier::download::queue::QueueManager;
+use courier::download::types::{DownloadInfo, DownloadRequest, DownloadStatus};
 
 use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
@@ -1380,7 +1380,7 @@ async fn finished_download_never_overwrites_a_file_that_appeared_meanwhile() {
 /// download folder -- it can never escape it.
 #[test]
 fn add_sanitizes_path_escaping_and_invalid_filenames() {
-    use loadout_farm_log::download::queue::sanitize_filename;
+    use courier::download::queue::sanitize_filename;
 
     assert_eq!(sanitize_filename("../../escape.bin").as_deref(), Some("escape.bin"));
     assert_eq!(
