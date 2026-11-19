@@ -9,7 +9,6 @@
 import { appCells, wrenchCells, emptyPotCells, discCells, zipCells, filmCells, seedCells, pdfCells, audioCells, imgCells, docCells, exeCells } from "./icons.js";
 
 const { invoke } = window.__TAURI__.core;
-const { getCurrentWindow } = window.__TAURI__.window;
 
 const POLL_INTERVAL_MS = 1000;
 
@@ -1438,24 +1437,6 @@ settingsFormEl.addEventListener("submit", async (event) => {
   }
 });
 
-// Title bar: render the app icon once (it never changes, so this runs
-// directly in init code rather than through any general icon-rendering
-// helper -- Task 4 adds that plumbing for icons that do need it) and wire
-// the three window-control buttons to the real Tauri window API.
-const titlebarIconEl = document.getElementById("titlebar-appicon");
-if (titlebarIconEl) {
-  const svgNs = "http://www.w3.org/2000/svg";
-  for (const cell of appCells) {
-    const rect = document.createElementNS(svgNs, "rect");
-    rect.setAttribute("x", cell.x);
-    rect.setAttribute("y", cell.y);
-    rect.setAttribute("width", "1");
-    rect.setAttribute("height", "1");
-    rect.setAttribute("fill", cell.fill);
-    titlebarIconEl.appendChild(rect);
-  }
-}
-
 // Status-bar Tool Shed icon, empty-state pot icon, Add Download panel seed
 // icon, the Settings panel's about-footer app icon, and both popups' own
 // title bar icon: all static (never change at runtime), so rendered once
@@ -1467,11 +1448,6 @@ renderIconInto(settingsAboutIconEl, appCells);
 renderIconInto(document.getElementById("add-panel-appicon"), appCells);
 renderIconInto(document.getElementById("settings-panel-appicon"), appCells);
 renderIconInto(document.getElementById("browser-setup-panel-appicon"), appCells);
-
-const appWindow = getCurrentWindow();
-document.getElementById("win-minimize").addEventListener("click", () => appWindow.minimize());
-document.getElementById("win-maximize").addEventListener("click", () => appWindow.toggleMaximize());
-document.getElementById("win-close").addEventListener("click", () => appWindow.close());
 
 refreshList();
 setInterval(refreshList, POLL_INTERVAL_MS);

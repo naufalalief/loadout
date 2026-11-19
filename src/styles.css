@@ -42,21 +42,18 @@ textarea {
   user-select: text;
 }
 
-/* The window itself is transparent (tauri.conf.json `"transparent": true`)
-   so there's real exterior space for `.win`'s elevation shadow to render
-   into -- a flush, opaque border on `body` has nothing "outside" it to
-   cast a shadow onto. `body` is just a small transparent margin now;
-   `.win` is the actual window surface, bordered and shadowed, inset
-   within it. */
+/* The window uses the OS's own native title bar and border now
+   (tauri.conf.json `"decorations": true"`, `"transparent": false`) --
+   `.win` just fills it, no floating-card border/shadow/radius of its
+   own to fake a window edge the OS already draws. */
 html,
 body {
-  background: transparent;
+  background: var(--surface);
   margin: 0;
 }
 body {
   font-family: var(--font-ui);
   font-size: 14px;
-  padding: 10px;
   color: var(--ink);
   height: 100vh;
   display: flex;
@@ -69,11 +66,6 @@ body {
   flex-direction: column;
   min-height: 0;
   background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  box-shadow:
-    0 1px 2px rgba(16, 24, 40, 0.04),
-    0 8px 24px rgba(16, 24, 40, 0.08);
   overflow: hidden;
 }
 
@@ -91,39 +83,19 @@ body {
   min-height: 0;
 }
 
-/* Custom title bar (replaces the native OS one -- `decorations: false` in
-   tauri.conf.json). `data-tauri-drag-region` on `.titlebar` itself makes
-   the bar draggable, while `.winbtns` and its children are deliberately
-   left out of that attribute so clicking them doesn't start a drag. */
-.titlebar {
-  background: var(--surface);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 12px 10px 14px;
-  border-bottom: 1px solid var(--border);
-  flex: 0 0 auto;
-}
-.titlebar .tgroup,
 .popup-titlebar .tgroup {
   display: flex;
   align-items: center;
   gap: 8px;
 }
-.titlebar .appicon,
 .popup-titlebar .appicon {
   flex-shrink: 0;
 }
-.titlebar .t,
 .popup-titlebar .t {
   font-size: 13px;
   font-weight: 600;
   color: var(--ink);
   letter-spacing: 0.1px;
-}
-.winbtns {
-  display: flex;
-  gap: 4px;
 }
 .wb {
   width: 24px;
