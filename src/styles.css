@@ -26,6 +26,22 @@
   box-sizing: border-box;
 }
 
+/* Every icon in the app (.sprite: row icons + the static ones below;
+   .appicon: the three popups' own title bar icon; .ticon: the Settings
+   button) is a plain stroke-based line icon, 24x24 viewBox, no fill --
+   one shared rule instead of repeating these on every <svg>. Color comes
+   from the icon's own slot (.slot/.heroslot/.aboutslot/etc. each set
+   their own `color`). */
+.sprite,
+.appicon,
+.ticon {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 /* This is a desktop app, not a web page -- text behaving like selectable
    page content (the empty-state message highlighting blue on a stray
    click/drag) reads as a bug, not a feature. Re-enabled narrowly for the
@@ -90,6 +106,7 @@ body {
 }
 .popup-titlebar .appicon {
   flex-shrink: 0;
+  color: var(--accent);
 }
 .popup-titlebar .t {
   font-size: 13px;
@@ -642,7 +659,7 @@ button:disabled {
   width: 42px;
   height: 42px;
   flex-shrink: 0;
-  color: var(--ink-dim);
+  color: var(--accent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1023,7 +1040,7 @@ button:disabled {
   width: 30px;
   height: 30px;
   flex-shrink: 0;
-  color: var(--ink-dim);
+  color: var(--accent);
   display: flex;
   align-items: center;
   justify-content: center;
