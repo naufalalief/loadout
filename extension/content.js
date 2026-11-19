@@ -97,138 +97,18 @@
   // video -- simpler to keep in sync and there's only ever one button
   // visible at a time anyway.
 
-  // LOADOUT app-icon cell data (pot + sprout), ported as a static literal
-  // from src/icons.js's `appCells` (= `potCells.concat(plantCells)`,
-  // generated there by `buildIcon`). The icon never changes, and content
-  // scripts can't `import` from the main app's src/ (no shared module
-  // boundary between the two packages), so the already-computed cells are
-  // duplicated here rather than re-running buildIcon at runtime. Keep this
-  // in sync with src/icons.js's `appCells` if that shape ever changes.
-  const APP_CELLS = [
-    { x: 3, y: 8, fill: '#e8a878' },
-    { x: 4, y: 8, fill: '#c9793e' },
-    { x: 5, y: 8, fill: '#c9793e' },
-    { x: 6, y: 8, fill: '#c9793e' },
-    { x: 7, y: 8, fill: '#c9793e' },
-    { x: 8, y: 8, fill: '#8a4f24' },
-    { x: 3, y: 9, fill: '#e8a878' },
-    { x: 4, y: 9, fill: '#c9793e' },
-    { x: 5, y: 9, fill: '#c9793e' },
-    { x: 6, y: 9, fill: '#c9793e' },
-    { x: 7, y: 9, fill: '#c9793e' },
-    { x: 8, y: 9, fill: '#8a4f24' },
-    { x: 4, y: 10, fill: '#e8a878' },
-    { x: 5, y: 10, fill: '#c9793e' },
-    { x: 6, y: 10, fill: '#c9793e' },
-    { x: 7, y: 10, fill: '#8a4f24' },
-    { x: 2, y: 8, fill: '#3a2410' },
-    { x: 3, y: 7, fill: '#3a2410' },
-    { x: 4, y: 7, fill: '#3a2410' },
-    { x: 5, y: 7, fill: '#3a2410' },
-    { x: 6, y: 7, fill: '#3a2410' },
-    { x: 7, y: 7, fill: '#3a2410' },
-    { x: 9, y: 8, fill: '#3a2410' },
-    { x: 8, y: 7, fill: '#3a2410' },
-    { x: 2, y: 9, fill: '#3a2410' },
-    { x: 3, y: 10, fill: '#3a2410' },
-    { x: 9, y: 9, fill: '#3a2410' },
-    { x: 8, y: 10, fill: '#3a2410' },
-    { x: 4, y: 11, fill: '#3a2410' },
-    { x: 5, y: 11, fill: '#3a2410' },
-    { x: 6, y: 11, fill: '#3a2410' },
-    { x: 7, y: 11, fill: '#3a2410' },
-    { x: 5, y: 4, fill: '#b8e89a' },
-    { x: 6, y: 4, fill: '#2f6b22' },
-    { x: 5, y: 5, fill: '#b8e89a' },
-    { x: 6, y: 5, fill: '#2f6b22' },
-    { x: 5, y: 6, fill: '#b8e89a' },
-    { x: 6, y: 6, fill: '#2f6b22' },
-    { x: 5, y: 7, fill: '#b8e89a' },
-    { x: 6, y: 7, fill: '#2f6b22' },
-    { x: 2, y: 3, fill: '#b8e89a' },
-    { x: 3, y: 2, fill: '#b8e89a' },
-    { x: 3, y: 3, fill: '#5aa83c' },
-    { x: 4, y: 2, fill: '#5aa83c' },
-    { x: 9, y: 3, fill: '#2f6b22' },
-    { x: 8, y: 2, fill: '#2f6b22' },
-    { x: 8, y: 3, fill: '#5aa83c' },
-    { x: 7, y: 2, fill: '#5aa83c' },
-    { x: 4, y: 4, fill: '#3a2410' },
-    { x: 5, y: 3, fill: '#3a2410' },
-    { x: 7, y: 4, fill: '#3a2410' },
-    { x: 6, y: 3, fill: '#3a2410' },
-    { x: 4, y: 5, fill: '#3a2410' },
-    { x: 7, y: 5, fill: '#3a2410' },
-    { x: 4, y: 6, fill: '#3a2410' },
-    { x: 7, y: 6, fill: '#3a2410' },
-    { x: 4, y: 7, fill: '#3a2410' },
-    { x: 5, y: 8, fill: '#3a2410' },
-    { x: 7, y: 7, fill: '#3a2410' },
-    { x: 6, y: 8, fill: '#3a2410' },
-    { x: 1, y: 3, fill: '#3a2410' },
-    { x: 2, y: 4, fill: '#3a2410' },
-    { x: 2, y: 2, fill: '#3a2410' },
-    { x: 3, y: 1, fill: '#3a2410' },
-    { x: 4, y: 3, fill: '#3a2410' },
-    { x: 3, y: 4, fill: '#3a2410' },
-    { x: 5, y: 2, fill: '#3a2410' },
-    { x: 4, y: 1, fill: '#3a2410' },
-    { x: 10, y: 3, fill: '#3a2410' },
-    { x: 9, y: 4, fill: '#3a2410' },
-    { x: 9, y: 2, fill: '#3a2410' },
-    { x: 8, y: 1, fill: '#3a2410' },
-    { x: 7, y: 3, fill: '#3a2410' },
-    { x: 8, y: 4, fill: '#3a2410' },
-    { x: 6, y: 2, fill: '#3a2410' },
-    { x: 7, y: 1, fill: '#3a2410' },
-  ];
+  // Courier's download-arrow icon markup, ported as a static literal from
+  // src/app.js's add-line icon (same path data). Content scripts can't
+  // `import` from the main app's src/ (no shared module boundary between
+  // the two packages), so the markup is duplicated here.
+  const ARROW_ICON_MARKUP =
+    '<path d="M12 3v12m0 0l-4-4m4 4l4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>';
 
   let overlayHost = null;
   let overlayButton = null;
   let overlayLabel = null;
   let currentVideo = null;
   let hideTimer = null;
-  let pillFontsRegistered = false;
-
-  // Chromium is widely reported to ignore @font-face rules declared inside
-  // a shadow tree's own stylesheet -- font faces have to be registered at
-  // the document/global level via the FontFace API and document.fonts,
-  // which IS visible to shadow trees (including closed ones, like this
-  // overlay's). Namespaced family names ('LOADOUT ...') avoid ever
-  // colliding with a host page's own same-named font. Runs once; still
-  // uses chrome.runtime.getURL() for the font file URLs, same as before.
-  function registerPillFonts() {
-    if (pillFontsRegistered) {
-      return;
-    }
-    pillFontsRegistered = true;
-
-    const fonts = [
-      ['LOADOUT Press Start 2P', 'fonts/press-start-2p/PressStart2P-Regular.ttf'],
-      ['LOADOUT VT323', 'fonts/vt323/VT323-Regular.ttf'],
-    ];
-    for (const [family, path] of fonts) {
-      try {
-        const face = new FontFace(family, `url('${chrome.runtime.getURL(path)}')`);
-        face
-          .load()
-          .then((loadedFace) => {
-            document.fonts.add(loadedFace);
-          })
-          .catch(() => {
-            // Slow network, a strict CSP blocking the fetch, etc. -- the
-            // pill's CSS falls back to a generic `monospace` after each
-            // namespaced family name, so it still shows something readable
-            // rather than silently falling back to a system default with
-            // no pixel look at all.
-          });
-      } catch (err) {
-        // FontFace construction itself threw (e.g. unsupported API) --
-        // same fallback reasoning as above.
-      }
-    }
-  }
-  registerPillFonts();
 
   function ensureOverlay() {
     if (overlayHost) {
@@ -249,85 +129,96 @@
     const style = document.createElement('style');
     style.textContent = `
       :host {
-        --wood: #c98f4e;
-        --cream: #fff8ea;
-        --ink: #3a2410;
-        --ink-dim: #8a6b42;
-        --leaf: #5aa83c;
+        --ink: #201d18;
+        --ink-deep: #141210;
+        --bronze: #c9a158;
+        --cream: #f3ede0;
       }
-      @keyframes popin {
-        from { transform: scale(.8); opacity: 0; }
-        to { transform: scale(1); opacity: 1; }
+      @keyframes fadein {
+        from { opacity: 0; }
+        to { opacity: 1; }
       }
-      .pill {
-        /* No position/top/right here (unlike the spec mockup's static demo
-           layout) -- this overlay's position is already fully driven by
-           positionOverlayFor() via the fixed-position host div above, and
-           a position:absolute offset on the pill itself would fight that
-           existing, working tracking logic. */
+      /* A wax seal, not a pill: a small dark disc with a thin bronze
+         ring, pressed into the corner. Solid fill reads against any
+         video frame behind it, light or dark. The disc's own shape
+         never changes on hover/disabled -- only the label beside it
+         is new text, never a reshaped capsule. */
+      .wrap {
         display: flex;
         align-items: center;
         gap: 8px;
-        background: var(--cream);
-        border: 2px solid var(--ink);
-        padding: 8px 12px;
-        box-shadow: 3px 3px 0 0 var(--ink);
+        background: none;
+        border: none;
+        padding: 0;
         cursor: pointer;
-        animation: popin .18s steps(4);
-        transition: transform .1s ease, box-shadow .08s ease, filter .1s ease;
-        /* The host above sets pointer-events: none so its own box never
-           captures clicks outside the button; this opts the pill itself
-           back in, same role the old plain button selector's rule played. */
+        animation: fadein .12s ease;
         pointer-events: auto;
       }
-      .pill:hover {
-        filter: brightness(1.05);
-      }
-      .pill:active {
-        transform: translate(2px, 2px);
-        box-shadow: none;
-      }
-      .pill:disabled {
-        opacity: 0.65;
+      .wrap:disabled {
         cursor: default;
       }
-      .pill .sprite {
-        image-rendering: pixelated;
-        flex-shrink: 0;
+      .label {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, Roboto, sans-serif;
+        font-size: 11px;
+        color: var(--cream);
+        white-space: nowrap;
+        background: rgba(20, 18, 16, .78);
+        padding: 5px 9px;
+        border-radius: 4px;
       }
-      .pill .label {
-        font-family: 'LOADOUT Press Start 2P', monospace;
-        font-size: 9px;
-        color: var(--ink);
+      .seal {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        background: radial-gradient(circle at 35% 30%, var(--ink) 0%, var(--ink-deep) 72%);
+        border: 1px solid rgba(201, 161, 88, .55);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, .4), inset 0 1px 1px rgba(255, 255, 255, .06);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: filter .1s ease;
+      }
+      .wrap:hover .seal {
+        filter: brightness(1.15);
+      }
+      .wrap:active .seal {
+        filter: brightness(0.9);
+      }
+      .wrap:disabled .seal {
+        opacity: .65;
+      }
+      .sprite {
+        display: block;
+        color: var(--bronze);
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
       }
     `;
     const button = document.createElement('button');
     button.type = 'button';
-    button.className = 'pill';
-
-    const svgNs = 'http://www.w3.org/2000/svg';
-    const svg = document.createElementNS(svgNs, 'svg');
-    svg.setAttribute('class', 'sprite');
-    svg.setAttribute('width', '16');
-    svg.setAttribute('height', '16');
-    svg.setAttribute('viewBox', '0 0 12 12');
-    svg.setAttribute('shape-rendering', 'crispEdges');
-    for (const cell of APP_CELLS) {
-      const rect = document.createElementNS(svgNs, 'rect');
-      rect.setAttribute('x', cell.x);
-      rect.setAttribute('y', cell.y);
-      rect.setAttribute('width', '1');
-      rect.setAttribute('height', '1');
-      rect.setAttribute('fill', cell.fill);
-      svg.appendChild(rect);
-    }
+    button.className = 'wrap';
 
     const label = document.createElement('span');
     label.className = 'label';
-    label.textContent = 'HARVEST';
+    label.textContent = 'Fetch';
 
-    button.appendChild(svg);
+    const seal = document.createElement('span');
+    seal.className = 'seal';
+    const svgNs = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(svgNs, 'svg');
+    svg.setAttribute('class', 'sprite');
+    svg.setAttribute('width', '12');
+    svg.setAttribute('height', '12');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.innerHTML = ARROW_ICON_MARKUP;
+    seal.appendChild(svg);
+
     button.appendChild(label);
+    button.appendChild(seal);
 
     button.addEventListener('mouseenter', cancelHide);
     button.addEventListener('mouseleave', scheduleHide);
@@ -401,7 +292,7 @@
       return;
     }
     overlayButton.disabled = false;
-    overlayLabel.textContent = 'HARVEST';
+    overlayLabel.textContent = 'Fetch';
   }
 
   function hideOverlayNow() {
