@@ -1,0 +1,1174 @@
+:root {
+  --bg: #1e1e1e;
+  --bg-panel: #2a2a2a;
+  --fg: #eee;
+  --fg-muted: #999;
+  --accent: #4a9eff;
+  --border: #3a3a3a;
+  --danger: #e06c75;
+
+  /* LOADOUT palette tokens (spec Appendix A / Constraints section). Used by
+     the title bar (Task 3) and, from here on, by the rest of the visual
+     shell: the add-crop row, status bar, and empty state below, plus every
+     later task's row/panel restyle. */
+  --sky: #7ec8e8;
+  --wood: #c98f4e;
+  --wood-dark: #8a5a28;
+  --cream: #fff8ea;
+  --ink: #3a2410;
+  --ink-dim: #8a6b42;
+  --stamina: #ff8a3c;
+  --rp: #4ab8e8;
+  --berry: #e8503c;
+  --leaf: #5aa83c;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* This is a desktop app, not a web page -- text behaving like selectable
+   page content (the empty-state message highlighting blue on a stray
+   click/drag) reads as a bug, not a feature. Re-enabled narrowly for the
+   few elements that are genuinely text fields (`input`, `textarea`) further
+   down this file, where normal text-selection/editing is expected. */
+html,
+body {
+  -webkit-user-select: none;
+  user-select: none;
+}
+input,
+textarea {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* Self-hosted LOADOUT fonts (src/fonts/, Task 1) -- never loaded from
+   Google Fonts at runtime. `.press` applies the pixel display face to
+   chrome/labels/buttons; body text uses VT323 by default. */
+@font-face {
+  font-family: "Press Start 2P";
+  src: url("fonts/press-start-2p/PressStart2P-Regular.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "VT323";
+  src: url("fonts/vt323/VT323-Regular.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+.press {
+  font-family: "Press Start 2P", monospace;
+}
+
+/* The window itself is transparent (tauri.conf.json `"transparent": true`)
+   so there's real exterior space for `.win`'s hard offset shadow to render
+   into, exactly like the mockup's floating card -- a flush, opaque border
+   on `body` has nothing "outside" it to cast a shadow onto, which is why
+   that didn't work. `body` is just a small transparent margin now; `.win`
+   is the actual cream card, bordered and shadowed, inset within it. */
+html,
+body {
+  background: transparent;
+  margin: 0;
+}
+body {
+  font-family: "VT323", monospace;
+  padding: 10px;
+  color: var(--ink);
+  height: 100vh;
+  display: flex;
+  overflow: hidden;
+}
+
+.win {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--cream);
+  border: 4px solid var(--ink);
+  box-shadow: 6px 6px 0 0 var(--ink);
+  overflow: hidden;
+}
+
+/* Scrolling region between the fixed title bar and status bar (Add Download/
+   Settings panels, the "+ NEW CROP" row, and the queue). `.titlebar`/
+   `.statusbar` are fixed-size flex items (see their own rules below) so they
+   never scroll off-screen; this wrapper absorbs all remaining vertical space
+   and scrolls internally instead of the whole page scrolling. */
+.content {
+  flex: 1;
+  overflow: auto;
+  background: var(--cream);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* Custom title bar (replaces the native OS one -- `decorations: false` in
+   tauri.conf.json). `data-tauri-drag-region` on `.titlebar` itself makes
+   the bar draggable, while `.winbtns` and its children are deliberately
+   left out of that attribute so clicking them doesn't start a drag. */
+.titlebar {
+  background: var(--wood);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 12px 11px 16px;
+  border-bottom: 4px solid var(--ink);
+  flex: 0 0 auto;
+}
+.titlebar .tgroup,
+.popup-titlebar .tgroup {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.titlebar .appicon,
+.popup-titlebar .appicon {
+  image-rendering: pixelated;
+  flex-shrink: 0;
+}
+.titlebar .t,
+.popup-titlebar .t {
+  font-size: 12px;
+  color: #fff6e0;
+  letter-spacing: 0.5px;
+  text-shadow:
+    1px 0 var(--ink),
+    -1px 0 var(--ink),
+    0 1px var(--ink),
+    0 -1px var(--ink);
+}
+.winbtns {
+  display: flex;
+  gap: 6px;
+}
+/* Sized up from the mockup's literal 18px -- that read fine on the
+   600px-wide mockup board, but is genuinely small and fiddly to hit as a
+   real, clickable window control. */
+.wb {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  margin: 0;
+  background: var(--cream);
+  border: 2px solid var(--ink);
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  transition:
+    transform 0.08s ease,
+    filter 0.1s ease;
+}
+.wb:hover {
+  border-color: var(--ink);
+  filter: brightness(1.1);
+}
+.wb:active {
+  transform: translate(1px, 1px);
+}
+.wb.close {
+  background: var(--berry);
+  color: #fff6e0;
+}
+
+/* The `h2` rule that used to live here (for the Add Download/Settings
+   panels' old `<h2>` headings) is gone along with those headings -- Task 6
+   replaced Add Download's with its `.hero` block and Task 7 replaced
+   Settings' with its `.srow`/`.about` content, per spec Appendix C, which
+   has no heading for either panel. Nothing in index.html uses `<h2>` any
+   more. */
+
+/* "+ NEW CROP" row above the queue list (spec Appendix A `.addrow`), always
+   visible regardless of whether the list is empty -- `refreshList()` only
+   toggles `.empty`/`#queue-list`, never this row. It's a <button> (not the
+   mockup's literal <div>) for real keyboard/focus support, so its own
+   border/background/padding/radius are pinned explicitly below rather than
+   left to the generic `button` rule above, including on `:hover` where that
+   rule's `border-color: var(--accent)` would otherwise win on specificity
+   for that one property. */
+.addrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: calc(100% - 16px);
+  margin: 10px 8px 10px;
+  border: 3px solid var(--ink);
+  border-radius: 0;
+  padding: 11px;
+  cursor: pointer;
+  background: var(--leaf);
+  box-shadow: 3px 3px 0 0 var(--ink);
+  transition:
+    transform 0.08s ease,
+    box-shadow 0.08s ease,
+    filter 0.1s ease;
+}
+.addrow:hover {
+  border-color: var(--ink);
+  filter: brightness(1.05);
+}
+.addrow:active {
+  transform: translate(3px, 3px);
+  box-shadow: none;
+}
+.addrow .label {
+  font-family: "Press Start 2P";
+  font-size: 10px;
+  color: #fff6e0;
+}
+
+/* Status bar (spec Appendix A `.statusbar`/`.shedbtn`): task/working counts
+   on the left, the Tool Shed (Settings) button on the right. */
+.statusbar {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 8px 10px 8px 16px;
+  border-top: 3px solid var(--ink);
+  background: #b07f42;
+  font-size: 11px;
+  color: #fff6e0;
+  font-family: "Press Start 2P";
+  flex: 0 0 auto;
+}
+.statustext {
+  display: flex;
+  gap: 16px;
+}
+.shedbtn {
+  width: 26px;
+  height: 26px;
+  margin-left: auto;
+  padding: 0;
+  background: var(--wood);
+  border: 2px solid var(--ink);
+  border-radius: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition:
+    transform 0.08s ease,
+    filter 0.1s ease;
+}
+.shedbtn:hover {
+  border-color: var(--ink);
+  filter: brightness(1.1);
+}
+.shedbtn:active {
+  transform: translate(1px, 1px);
+}
+.shedbtn .ticon {
+  image-rendering: pixelated;
+}
+
+/* Empty state (spec Appendix B), shown in place of #queue-list when the
+   merged items list is empty. `.empty` is declared *before* the bare
+   `.hidden` utility below, so at equal specificity `.hidden`'s
+   `display: none` already wins by source order on its own -- no
+   `.empty.hidden` override is needed here (that pattern only applies to a
+   class declared *after* `.hidden`). */
+.empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 70px 30px;
+  text-align: center;
+  gap: 16px;
+}
+.potslot {
+  width: 70px;
+  height: 70px;
+  background: #fff1d6;
+  border: 2px solid var(--ink-dim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.etitle {
+  font-family: "Press Start 2P";
+  font-size: 13px;
+  color: var(--ink);
+}
+.esub {
+  font-size: 15px;
+  color: var(--ink-dim);
+  max-width: 340px;
+  line-height: 1.5;
+}
+.ebtn {
+  margin-top: 6px;
+  font-family: "Press Start 2P";
+  font-size: 11px;
+  color: #fff6e0;
+  background: var(--leaf);
+  border: 2px solid var(--ink);
+  border-radius: 0;
+  padding: 12px 20px;
+  cursor: pointer;
+  box-shadow: 3px 3px 0 0 var(--ink);
+  transition:
+    transform 0.08s ease,
+    box-shadow 0.08s ease,
+    filter 0.1s ease;
+}
+.ebtn:hover {
+  border-color: var(--ink);
+  filter: brightness(1.05);
+}
+.ebtn:active {
+  transform: translate(3px, 3px);
+  box-shadow: none;
+}
+
+button {
+  font-size: 0.9rem;
+  padding: 0.4rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-panel);
+  color: var(--fg);
+  cursor: pointer;
+}
+
+button:hover {
+  border-color: var(--accent);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* Add Download / Settings are popups (modal overlays), not inline sections
+   that push the queue list down -- `.panel` is the fixed, dimmed backdrop;
+   `.panel-card` (below) is the actual floating cream card inside it. Both
+   sections still toggle the same way as before (`openPanel`/`closePanel`
+   in app.js just add/remove this `.hidden` class), only what the class
+   shows has changed. */
+.panel {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(20, 12, 4, 0.5);
+}
+
+.panel.hidden {
+  display: none;
+}
+
+.panel-card {
+  width: 100%;
+  max-width: 440px;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--cream);
+  border: 3px solid var(--ink);
+  box-shadow: 4px 4px 0 0 var(--ink);
+  overflow: hidden;
+}
+
+/* Mini title bar inside the popup card (its own "PLANT A NEW CROP"/
+   "TOOL SHED" + close button, matching the mockup's own window chrome for
+   these -- the main window's title bar above belongs to the app as a
+   whole, not to whichever popup happens to be open over it). */
+.popup-titlebar {
+  background: var(--wood);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 12px 11px 16px;
+  border-bottom: 4px solid var(--ink);
+  flex: 0 0 auto;
+}
+
+.panel-card-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 16px;
+}
+
+.panel label {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--fg-muted);
+  margin-bottom: 0.75rem;
+}
+
+.panel input {
+  display: block;
+  width: 100%;
+  margin-top: 0.25rem;
+  padding: 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 0.9rem;
+}
+
+.panel-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.error {
+  font-size: 0.85rem;
+  color: var(--danger);
+}
+
+.error.hidden,
+.hidden {
+  display: none;
+}
+
+/* `flex:1` so `.empty` (above) can actually center itself vertically within
+   all the space `.content` has available, not just within its own content
+   height -- `.content` is the flex column that makes this `flex:1` mean
+   something (see its own rule). */
+#queue {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 200px;
+}
+
+/* Queue row (spec Appendix A `.row`) -- `position:relative` so its own
+   `.popover` (position:absolute) anchors under this row's trigger button
+   instead of the page. */
+.row {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 13px;
+  padding: 14px 10px;
+  border-bottom: 2px solid #e8dab8;
+  transition: background 0.15s ease;
+}
+/* Marks the row the open context menu belongs to -- stays highlighted
+   for as long as the menu is open (same convention as Free Download
+   Manager/IDM's own row context menu), not a brief flash. `app.js` adds
+   this when the menu opens and removes it when the menu closes, for
+   whichever reason (an item clicked, clicked outside, Escape, or another
+   row's own right-click taking over). */
+.row.selected {
+  background: #f0ddb0;
+}
+/* Lighter than `.selected` above, on purpose -- hovering and having a
+   menu open stay visibly distinct, even once the cursor has moved off the
+   row and onto the menu itself. */
+.row:hover {
+  background: #f8ecd2;
+}
+.row:last-child {
+  border-bottom: none;
+}
+
+.slot {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  background: #fff1d6;
+  border: 2px solid var(--ink-dim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.slot .sprite {
+  image-rendering: pixelated;
+}
+
+.info {
+  flex: 1;
+  min-width: 0;
+}
+
+.fname {
+  font-size: 14px;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.meta {
+  font-size: 13px;
+  color: var(--ink-dim);
+  margin-top: 4px;
+}
+.meta .sword {
+  font-family: "Press Start 2P";
+  font-size: 9px;
+  letter-spacing: 0.5px;
+}
+/* `.mrest`'s own text (set in `updateDownloadRow`/`updateExtractRow`)
+   already starts with a leading space before its em dash, matching spec
+   Appendix A's literal markup (a bare text node after `.sword`, not a
+   margin) -- no extra CSS gap needed here. */
+
+/* Right-click/double-click discoverability hint (app.js's `els.hint`):
+   empty text when there's nothing to hint at (anything but a Completed
+   row with a real file), and even with text, invisible until the row is
+   hovered or has its context menu open. `opacity`, not `display`, so it
+   never shifts the row's height when it appears. */
+.hint {
+  font-size: 12px;
+  color: var(--ink-dim);
+  margin-top: 4px;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+.row:hover .hint,
+.row.selected .hint {
+  opacity: 1;
+}
+
+.stambar-outer {
+  margin-top: 7px;
+  height: 11px;
+  width: 100%;
+  background: #fff;
+  border: 2px solid var(--ink);
+  padding: 1px;
+}
+.stambar-fill {
+  height: 100%;
+  background: var(--stamina);
+  transition: width 0.4s ease;
+}
+.stambar-outer.indeterminate .stambar-fill {
+  width: 100% !important;
+  opacity: 0.3;
+}
+/* `.hidden`'s `display:none` is declared earlier in this file but wins on
+   source order alone since `.stambar-outer` itself never sets `display` --
+   same reasoning as `.popover` below, unlike the old `.format-picker`/
+   `.download-limit` rules this replaces, which did set `display` and so
+   needed an explicit `.hidden`-beating override. */
+
+.actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+  padding-top: 1px;
+}
+.actbtn {
+  min-width: 26px;
+  height: 24px;
+  padding: 0 6px;
+  background: #fff1d6;
+  border: 2px solid var(--ink);
+  border-radius: 0;
+  font-family: "Press Start 2P";
+  font-size: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--ink);
+  box-shadow: 1px 1px 0 0 var(--ink);
+  transition:
+    transform 0.08s ease,
+    box-shadow 0.08s ease,
+    filter 0.1s ease;
+}
+/* `border-color` pinned explicitly, same reasoning as `.addrow:hover`
+   above: the generic `button:hover{border-color:var(--accent)}` rule further
+   up this file has specificity (0,1,1), higher than this single-class
+   `.actbtn:hover` (0,1,0), so without this override every action button's
+   hover border would turn the generic accent blue instead of staying ink. */
+.actbtn:hover {
+  border-color: var(--ink);
+  filter: brightness(1.08);
+}
+.actbtn:active {
+  transform: translate(1px, 1px);
+  box-shadow: none;
+}
+.actbtn.danger {
+  color: var(--berry);
+}
+.actbtn.active {
+  background: var(--ink);
+  color: var(--cream);
+}
+
+/* Speed-limit / pick-a-size popovers (spec Appendix D). Closed by default
+   via the bare `.hidden` utility above -- `.popover` itself never sets
+   `display`, so no higher-specificity override is needed to make that
+   toggle take effect (unlike `.format-picker.hidden`/`.download-limit.hidden`
+   before this task, which did need one). */
+.popover {
+  position: absolute;
+  top: 100%;
+  right: 10px;
+  margin-top: 4px;
+  z-index: 20;
+  background: var(--cream);
+  border: 3px solid var(--ink);
+  box-shadow: 4px 4px 0 0 var(--ink);
+  padding: 10px 12px;
+  min-width: 170px;
+}
+.popover .ptitle {
+  font-family: "Press Start 2P";
+  font-size: 8px;
+  color: var(--ink-dim);
+  margin-bottom: 9px;
+}
+.popover .prow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+/* REQUIRED: without min-width:0 the input's default intrinsic width
+   overflows the ~170px popover and visually pushes the SET button out past
+   the border -- this exact bug was already hit once during the mockup's
+   design phase (spec Appendix D / Global Constraints). */
+.popover input {
+  flex: 1;
+  min-width: 0;
+  font-family: "VT323";
+  font-size: 14px;
+  color: var(--ink);
+  background: #fff;
+  border: 2px solid var(--ink-dim);
+  padding: 5px 7px;
+}
+.popover .prow .actbtn {
+  flex-shrink: 0;
+}
+.popover .pick {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font-family: "VT323";
+  font-size: 15px;
+  color: var(--ink);
+  padding: 7px 9px;
+  border: 2px solid var(--ink-dim);
+  border-radius: 0;
+  background: #fff1d6;
+  margin-bottom: 6px;
+  cursor: pointer;
+  transition:
+    background 0.1s ease,
+    color 0.1s ease,
+    transform 0.08s ease;
+}
+.popover .pick:last-child {
+  margin-bottom: 0;
+}
+.popover .pick:hover {
+  background: var(--leaf);
+  color: #fff6e0;
+}
+.popover .pick:active {
+  transform: translate(1px, 1px);
+}
+.popover .pick.danger {
+  color: var(--berry);
+}
+.popover .pick.danger:hover {
+  background: var(--berry);
+  color: #fff6e0;
+}
+.popover .pickdiv {
+  height: 0;
+  border-top: 2px dashed var(--ink-dim);
+  margin: 2px 0 8px;
+}
+
+/* Right-click context menu: one shared element appended to <body>
+   (app.js's `contextMenuEl`), repositioned at the click point and
+   repopulated per row on `contextmenu`/`dblclick` -- see
+   `contextMenuItemsFor`/`openContextMenu` in app.js. Reuses `.popover`'s
+   look exactly (and its `.pick`/`.pickdiv` children above), just
+   fixed-positioned by cursor coordinates instead of anchored under a
+   trigger button inside a `.row`. The `.popover` selector alone would tie
+   on specificity with the plain `.popover` rule above and lose on source
+   order, so this is written as the compound `.popover.ctxmenu` to win
+   outright regardless of order. */
+.popover.ctxmenu {
+  position: fixed;
+  top: 0;
+  right: auto;
+  margin-top: 0;
+  min-width: 200px;
+  z-index: 100;
+}
+
+/* Add Download popup content (spec Appendix C). The `.field`/`.btn` rules
+   below come after `.panel label`/`.panel input`/`button:hover` in this
+   file, so at equal specificity they win on source order, and `.btn:hover`
+   pins its own `border-color` (see the generic `button:hover` note at the
+   top of the rule set). */
+#add-panel .error {
+  color: var(--berry);
+}
+.hero {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 4px 2px 18px;
+}
+.heroslot {
+  width: 50px;
+  height: 50px;
+  flex-shrink: 0;
+  background: #fff1d6;
+  border: 2px solid var(--ink-dim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.heroslot .sprite {
+  image-rendering: pixelated;
+}
+.herotext {
+  font-size: 13px;
+  color: var(--ink-dim);
+  line-height: 1.5;
+}
+.field {
+  margin-bottom: 16px;
+}
+.field label {
+  display: block;
+  font-family: "Press Start 2P";
+  font-size: 9px;
+  color: var(--ink);
+  margin-bottom: 7px;
+}
+.field input {
+  width: 100%;
+  margin: 0;
+  border-radius: 0;
+  font-family: "VT323";
+  font-size: 16px;
+  color: var(--ink);
+  background: #fff;
+  border: 2px solid var(--ink);
+  padding: 9px 10px;
+  box-shadow: inset 2px 2px 0 rgba(0, 0, 0, 0.06);
+  transition: border-color 0.1s ease;
+}
+.field input::placeholder {
+  color: var(--ink-dim);
+}
+.field input:focus {
+  outline: none;
+  border-color: var(--leaf);
+}
+#add-panel .panel-actions {
+  gap: 10px;
+  padding: 8px 0 20px;
+}
+.btn {
+  flex: 1;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Fixed height, not padding + line-height, so two buttons side by side
+     always match exactly -- a glyph the pixel font itself doesn't carry
+     (e.g. a checkmark) falls back to a different font for just that
+     character, and that fallback's own line metrics could otherwise make
+     one button taller than its sibling even with identical padding. */
+  height: 40px;
+  padding: 0 12px;
+  font-family: "Press Start 2P";
+  font-size: 10px;
+  line-height: 1.4;
+  cursor: pointer;
+  border: 2px solid var(--ink);
+  border-radius: 0;
+  box-shadow: 3px 3px 0 0 var(--ink);
+  text-align: center;
+  transition:
+    transform 0.08s ease,
+    box-shadow 0.08s ease,
+    filter 0.1s ease;
+}
+/* `border-color` pinned explicitly on :hover, same reasoning as `.addrow:hover`
+   above: the generic `button:hover{border-color:var(--accent)}` rule has
+   specificity (0,1,1), which would otherwise paint a blue border here. */
+.btn:hover {
+  border-color: var(--ink);
+  filter: brightness(1.05);
+}
+.btn:active {
+  transform: translate(3px, 3px);
+  box-shadow: none;
+}
+.btn.primary {
+  background: var(--leaf);
+  color: #fff6e0;
+}
+.btn.secondary {
+  background: #fff1d6;
+  color: var(--ink-dim);
+}
+
+/* Settings popup content (spec Appendix C), minus the three unbacked toggle
+   rows (Harvest chime / Auto-replant failed crops / Start with the season --
+   none has a real field in the backend's `SettingsDto`, see
+   src-tauri/src/settings.rs). Reuses `.btn`/`.btn.primary`/`.btn.secondary`/
+   `.panel-actions` from the Add Download popup above for Save/Cancel --
+   Appendix C's Settings markup doesn't show an actions row at all, but
+   Save/Cancel must keep working (Task 7 brief Step 2), so they're themed
+   the same way Add Download's actions are. */
+#settings-panel .error {
+  color: var(--berry);
+}
+#settings-panel .panel-actions {
+  gap: 10px;
+  padding: 8px 0 20px;
+}
+/* Wider than Add Download's 440px -- matches the mockup's own Settings
+   card width (spec Appendix C), which is wider than Add Download's. */
+#settings-panel .panel-card {
+  max-width: 480px;
+}
+
+/* Browser Companion Setup Guide popup content (spec Appendix C), ported
+   verbatim except `.actions` -> `.panel-actions` (see the comment above
+   that markup in index.html) and the step/tip spacing, which comes from
+   the spec's own rules unchanged. */
+#browser-setup-panel .panel-card {
+  max-width: 460px;
+}
+#browser-setup-panel .error {
+  color: var(--berry);
+}
+.intro {
+  font-size: 14px;
+  color: var(--ink-dim);
+  line-height: 1.6;
+  margin-bottom: 6px;
+}
+.intro b {
+  color: var(--ink);
+}
+
+.step {
+  display: flex;
+  gap: 14px;
+  padding: 15px 2px;
+  border-bottom: 2px solid #e8dab8;
+}
+.step:last-of-type {
+  border-bottom: none;
+}
+.stepnum {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  background: var(--leaf);
+  color: #fff6e0;
+  border: 2px solid var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Press Start 2P";
+  font-size: 12px;
+  box-shadow: 2px 2px 0 0 var(--ink);
+}
+.steptext {
+  flex: 1;
+  padding-top: 2px;
+}
+.stitle {
+  font-size: 15px;
+  color: var(--ink);
+}
+.shint {
+  font-size: 12px;
+  color: var(--ink-dim);
+  margin-top: 3px;
+}
+.stepbtn {
+  display: inline-flex;
+  margin-top: 9px;
+  font-family: "Press Start 2P";
+  font-size: 8px;
+  color: var(--ink);
+  background: #fff1d6;
+  border: 2px solid var(--ink);
+  padding: 7px 10px;
+  cursor: pointer;
+  box-shadow: 2px 2px 0 0 var(--ink);
+  transition:
+    transform 0.08s ease,
+    box-shadow 0.08s ease,
+    filter 0.1s ease;
+}
+/* `border-color` pinned explicitly on :hover, same reasoning as
+   `.btn:hover`/`.changebtn:hover` above: the generic
+   `button:hover{border-color:var(--accent)}` rule has specificity (0,1,1),
+   which would otherwise paint a blue border on this real <button> (the
+   spec's own mockup markup used a plain non-interactive <div> here). */
+.stepbtn:hover {
+  border-color: var(--ink);
+  filter: brightness(1.08);
+}
+.stepbtn:active {
+  transform: translate(2px, 2px);
+  box-shadow: none;
+}
+
+.tip {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin: 4px 2px 18px;
+  padding: 11px 12px;
+  background: #fff1d6;
+  border: 2px dashed var(--ink-dim);
+}
+.tip .glyph {
+  font-size: 15px;
+  line-height: 1;
+}
+.tip .ttext {
+  font-size: 13px;
+  color: var(--ink-dim);
+  line-height: 1.5;
+}
+
+#browser-setup-panel .panel-actions {
+  gap: 10px;
+  padding: 4px 0 20px;
+}
+
+/* Visual-only toggle switches (Harvest chime / Auto-replant failed crops /
+   Start with the season) -- see the comment above these rows in
+   index.html for why they don't read from or write to real settings. */
+.switch {
+  width: 40px;
+  height: 20px;
+  padding: 0;
+  margin: 0;
+  flex-shrink: 0;
+  border: 2px solid var(--ink);
+  border-radius: 0;
+  background: #fff1d6;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.switch .thumb {
+  position: absolute;
+  top: 1px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  background: var(--ink-dim);
+  transition:
+    left 0.15s ease,
+    background 0.15s ease;
+}
+.switch.on {
+  background: var(--leaf);
+}
+.switch.on .thumb {
+  left: 22px;
+  background: #fff6e0;
+}
+
+.srow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 16px 2px;
+  border-bottom: 2px dashed var(--ink-dim);
+}
+/* Neither the spec's literal `:last-child` nor `:last-of-type` works here:
+   in this file's actual markup the last `.srow` (Harvest tools) isn't the
+   form's last child element (the error paragraph/`.about` footer/
+   `.panel-actions` follow it), so `:last-child` never matches; and
+   `:last-of-type` matches by tag name, not class, so it matches the last
+   `div` child of `#settings-form` -- which is `.panel-actions`, not the
+   last `.srow` -- so it never matches any `.srow` either. `.srow-last` is
+   an explicit class on the actual last `.srow` (set in index.html) so this
+   rule targets exactly the row it means to, regardless of what follows it
+   in the markup. */
+.srow-last {
+  border-bottom: none;
+}
+.slabel {
+  font-size: 15px;
+  color: var(--ink);
+}
+.ssub {
+  font-size: 12px;
+  color: var(--ink-dim);
+  margin-top: 2px;
+}
+/* Higher specificity than the bare `.ssub`/`.error` rules above (two
+   classes vs. one) so the yt-dlp update status line -- which toggles a
+   plain `.error` class via JS (see app.js) while living inside a `.ssub`
+   -- reliably turns berry instead of staying ink-dim regardless of the
+   two single-class rules' own source order. */
+.ssub.error {
+  color: var(--berry);
+}
+
+/* "Paired browsers" row -- unlike every other `.srow` here, this one has
+   no right-hand control, just a full-width column (the row list below the
+   label), so it skips the usual label+control flex pairing entirely. */
+.profiles-srow {
+  align-items: flex-start;
+}
+.profiles-col {
+  width: 100%;
+}
+.profilelist {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.profilerow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.profilelabel {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  border-radius: 0;
+  font-family: "VT323";
+  font-size: 14px;
+  color: var(--ink);
+  background: #fff;
+  border: 2px solid var(--ink-dim);
+  padding: 5px 8px;
+}
+.profilelabel:focus {
+  outline: none;
+  border-color: var(--leaf);
+}
+.profiledate {
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--ink-dim);
+  white-space: nowrap;
+}
+
+.pathbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+/* `#settings-panel .smallinput`, not the spec's bare `.smallinput` --
+   the generic `.panel input` rule above (element+class, specificity
+   (0,1,1)) would otherwise beat a bare single-class `.smallinput`
+   ((0,1,0)) regardless of source order and leak its dark background/light
+   text back in, the same (0,1,1)-trap `.field input` above was written to
+   avoid for `#add-panel`. Scoping by id ((1,1,0)) beats it outright. */
+#settings-panel .smallinput {
+  width: 120px;
+  margin: 0;
+  border-radius: 0;
+  font-family: "VT323";
+  font-size: 14px;
+  color: var(--ink);
+  background: #fff;
+  border: 2px solid var(--ink-dim);
+  padding: 5px 8px;
+}
+#settings-panel .smallinput:focus {
+  outline: none;
+  border-color: var(--leaf);
+}
+/* Wider than the spec's base `.smallinput` (120px), which was sized for
+   the speed-limit field -- a real download-folder path needs more room. */
+#settings-panel .pathinput {
+  width: 200px;
+}
+/* Narrower than the base `.smallinput`, centered -- this is a small
+   integer count (max concurrent downloads), not free text. */
+#settings-panel .numinput {
+  width: 56px;
+  text-align: center;
+}
+
+.changebtn {
+  flex-shrink: 0;
+  font-family: "Press Start 2P";
+  font-size: 8px;
+  background: #fff1d6;
+  color: var(--ink);
+  border: 2px solid var(--ink);
+  border-radius: 0;
+  padding: 7px 9px;
+  cursor: pointer;
+  box-shadow: 2px 2px 0 0 var(--ink);
+  transition:
+    transform 0.08s ease,
+    box-shadow 0.08s ease,
+    filter 0.1s ease;
+}
+/* `border-color` pinned explicitly on :hover, same reasoning as
+   `.btn:hover`/`.addrow:hover` above: the generic
+   `button:hover{border-color:var(--accent)}` rule has specificity (0,1,1),
+   which would otherwise paint a blue border on this real <button>. */
+.changebtn:hover {
+  border-color: var(--ink);
+  filter: brightness(1.08);
+}
+.changebtn:active {
+  transform: translate(2px, 2px);
+  box-shadow: none;
+}
+.changebtn.danger {
+  color: var(--berry);
+}
+
+.about {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 2px 4px;
+}
+.aboutslot {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  background: #fff1d6;
+  border: 2px solid var(--ink-dim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.aboutslot .sprite {
+  image-rendering: pixelated;
+}
+.aboutver {
+  font-size: 12px;
+  color: var(--ink-dim);
+}
