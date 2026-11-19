@@ -97,90 +97,82 @@
   // video -- simpler to keep in sync and there's only ever one button
   // visible at a time anyway.
 
-  // LOADOUT app-icon cell data (pot + sprout), ported as a static literal
-  // from src/icons.js's `appCells` (= `potCells.concat(plantCells)`,
-  // generated there by `buildIcon`). The icon never changes, and content
-  // scripts can't `import` from the main app's src/ (no shared module
-  // boundary between the two packages), so the already-computed cells are
-  // duplicated here rather than re-running buildIcon at runtime. Keep this
-  // in sync with src/icons.js's `appCells` if that shape ever changes.
+  // Loadout download-arrow icon cell data, ported as a static literal from
+  // src/icons.js's `appCells` (generated there by `buildIcon`/`flatIcon`).
+  // The icon never changes, and content scripts can't `import` from the
+  // main app's src/ (no shared module boundary between the two packages),
+  // so the already-computed cells are duplicated here rather than
+  // re-running buildIcon at runtime. Keep this in sync with src/icons.js's
+  // `appCells` if that shape ever changes.
   const APP_CELLS = [
-    { x: 3, y: 8, fill: '#e8a878' },
-    { x: 4, y: 8, fill: '#c9793e' },
-    { x: 5, y: 8, fill: '#c9793e' },
-    { x: 6, y: 8, fill: '#c9793e' },
-    { x: 7, y: 8, fill: '#c9793e' },
-    { x: 8, y: 8, fill: '#8a4f24' },
-    { x: 3, y: 9, fill: '#e8a878' },
-    { x: 4, y: 9, fill: '#c9793e' },
-    { x: 5, y: 9, fill: '#c9793e' },
-    { x: 6, y: 9, fill: '#c9793e' },
-    { x: 7, y: 9, fill: '#c9793e' },
-    { x: 8, y: 9, fill: '#8a4f24' },
-    { x: 4, y: 10, fill: '#e8a878' },
-    { x: 5, y: 10, fill: '#c9793e' },
-    { x: 6, y: 10, fill: '#c9793e' },
-    { x: 7, y: 10, fill: '#8a4f24' },
-    { x: 2, y: 8, fill: '#3a2410' },
-    { x: 3, y: 7, fill: '#3a2410' },
-    { x: 4, y: 7, fill: '#3a2410' },
-    { x: 5, y: 7, fill: '#3a2410' },
-    { x: 6, y: 7, fill: '#3a2410' },
-    { x: 7, y: 7, fill: '#3a2410' },
-    { x: 9, y: 8, fill: '#3a2410' },
-    { x: 8, y: 7, fill: '#3a2410' },
-    { x: 2, y: 9, fill: '#3a2410' },
-    { x: 3, y: 10, fill: '#3a2410' },
-    { x: 9, y: 9, fill: '#3a2410' },
-    { x: 8, y: 10, fill: '#3a2410' },
-    { x: 4, y: 11, fill: '#3a2410' },
-    { x: 5, y: 11, fill: '#3a2410' },
-    { x: 6, y: 11, fill: '#3a2410' },
-    { x: 7, y: 11, fill: '#3a2410' },
-    { x: 5, y: 4, fill: '#b8e89a' },
-    { x: 6, y: 4, fill: '#2f6b22' },
-    { x: 5, y: 5, fill: '#b8e89a' },
-    { x: 6, y: 5, fill: '#2f6b22' },
-    { x: 5, y: 6, fill: '#b8e89a' },
-    { x: 6, y: 6, fill: '#2f6b22' },
-    { x: 5, y: 7, fill: '#b8e89a' },
-    { x: 6, y: 7, fill: '#2f6b22' },
-    { x: 2, y: 3, fill: '#b8e89a' },
-    { x: 3, y: 2, fill: '#b8e89a' },
-    { x: 3, y: 3, fill: '#5aa83c' },
-    { x: 4, y: 2, fill: '#5aa83c' },
-    { x: 9, y: 3, fill: '#2f6b22' },
-    { x: 8, y: 2, fill: '#2f6b22' },
-    { x: 8, y: 3, fill: '#5aa83c' },
-    { x: 7, y: 2, fill: '#5aa83c' },
-    { x: 4, y: 4, fill: '#3a2410' },
-    { x: 5, y: 3, fill: '#3a2410' },
-    { x: 7, y: 4, fill: '#3a2410' },
-    { x: 6, y: 3, fill: '#3a2410' },
-    { x: 4, y: 5, fill: '#3a2410' },
-    { x: 7, y: 5, fill: '#3a2410' },
-    { x: 4, y: 6, fill: '#3a2410' },
-    { x: 7, y: 6, fill: '#3a2410' },
-    { x: 4, y: 7, fill: '#3a2410' },
-    { x: 5, y: 8, fill: '#3a2410' },
-    { x: 7, y: 7, fill: '#3a2410' },
-    { x: 6, y: 8, fill: '#3a2410' },
-    { x: 1, y: 3, fill: '#3a2410' },
-    { x: 2, y: 4, fill: '#3a2410' },
-    { x: 2, y: 2, fill: '#3a2410' },
-    { x: 3, y: 1, fill: '#3a2410' },
-    { x: 4, y: 3, fill: '#3a2410' },
-    { x: 3, y: 4, fill: '#3a2410' },
-    { x: 5, y: 2, fill: '#3a2410' },
-    { x: 4, y: 1, fill: '#3a2410' },
-    { x: 10, y: 3, fill: '#3a2410' },
-    { x: 9, y: 4, fill: '#3a2410' },
-    { x: 9, y: 2, fill: '#3a2410' },
-    { x: 8, y: 1, fill: '#3a2410' },
-    { x: 7, y: 3, fill: '#3a2410' },
-    { x: 8, y: 4, fill: '#3a2410' },
-    { x: 6, y: 2, fill: '#3a2410' },
-    { x: 7, y: 1, fill: '#3a2410' },
+    { x: 5, y: 1, fill: '#2f6fed' },
+    { x: 6, y: 1, fill: '#2f6fed' },
+    { x: 5, y: 2, fill: '#2f6fed' },
+    { x: 6, y: 2, fill: '#2f6fed' },
+    { x: 5, y: 3, fill: '#2f6fed' },
+    { x: 6, y: 3, fill: '#2f6fed' },
+    { x: 5, y: 4, fill: '#2f6fed' },
+    { x: 6, y: 4, fill: '#2f6fed' },
+    { x: 3, y: 5, fill: '#2f6fed' },
+    { x: 4, y: 5, fill: '#2f6fed' },
+    { x: 5, y: 5, fill: '#2f6fed' },
+    { x: 6, y: 5, fill: '#2f6fed' },
+    { x: 7, y: 5, fill: '#2f6fed' },
+    { x: 8, y: 5, fill: '#2f6fed' },
+    { x: 4, y: 6, fill: '#2f6fed' },
+    { x: 5, y: 6, fill: '#2f6fed' },
+    { x: 6, y: 6, fill: '#2f6fed' },
+    { x: 7, y: 6, fill: '#2f6fed' },
+    { x: 5, y: 7, fill: '#2f6fed' },
+    { x: 6, y: 7, fill: '#2f6fed' },
+    { x: 2, y: 9, fill: '#2f6fed' },
+    { x: 3, y: 9, fill: '#2f6fed' },
+    { x: 4, y: 9, fill: '#2f6fed' },
+    { x: 5, y: 9, fill: '#2f6fed' },
+    { x: 6, y: 9, fill: '#2f6fed' },
+    { x: 7, y: 9, fill: '#2f6fed' },
+    { x: 8, y: 9, fill: '#2f6fed' },
+    { x: 9, y: 9, fill: '#2f6fed' },
+    { x: 2, y: 8, fill: '#2f6fed' },
+    { x: 9, y: 8, fill: '#2f6fed' },
+    { x: 4, y: 1, fill: '#1b1f24' },
+    { x: 5, y: 0, fill: '#1b1f24' },
+    { x: 7, y: 1, fill: '#1b1f24' },
+    { x: 6, y: 0, fill: '#1b1f24' },
+    { x: 4, y: 2, fill: '#1b1f24' },
+    { x: 7, y: 2, fill: '#1b1f24' },
+    { x: 4, y: 3, fill: '#1b1f24' },
+    { x: 7, y: 3, fill: '#1b1f24' },
+    { x: 4, y: 4, fill: '#1b1f24' },
+    { x: 7, y: 4, fill: '#1b1f24' },
+    { x: 2, y: 5, fill: '#1b1f24' },
+    { x: 3, y: 6, fill: '#1b1f24' },
+    { x: 3, y: 4, fill: '#1b1f24' },
+    { x: 9, y: 5, fill: '#1b1f24' },
+    { x: 8, y: 6, fill: '#1b1f24' },
+    { x: 8, y: 4, fill: '#1b1f24' },
+    { x: 4, y: 7, fill: '#1b1f24' },
+    { x: 7, y: 7, fill: '#1b1f24' },
+    { x: 5, y: 8, fill: '#1b1f24' },
+    { x: 6, y: 8, fill: '#1b1f24' },
+    { x: 1, y: 9, fill: '#1b1f24' },
+    { x: 2, y: 10, fill: '#1b1f24' },
+    { x: 3, y: 10, fill: '#1b1f24' },
+    { x: 3, y: 8, fill: '#1b1f24' },
+    { x: 4, y: 10, fill: '#1b1f24' },
+    { x: 4, y: 8, fill: '#1b1f24' },
+    { x: 5, y: 10, fill: '#1b1f24' },
+    { x: 6, y: 10, fill: '#1b1f24' },
+    { x: 7, y: 10, fill: '#1b1f24' },
+    { x: 7, y: 8, fill: '#1b1f24' },
+    { x: 8, y: 10, fill: '#1b1f24' },
+    { x: 8, y: 8, fill: '#1b1f24' },
+    { x: 10, y: 9, fill: '#1b1f24' },
+    { x: 9, y: 10, fill: '#1b1f24' },
+    { x: 1, y: 8, fill: '#1b1f24' },
+    { x: 2, y: 7, fill: '#1b1f24' },
+    { x: 10, y: 8, fill: '#1b1f24' },
+    { x: 9, y: 7, fill: '#1b1f24' },
   ];
 
   let overlayHost = null;
@@ -188,47 +180,6 @@
   let overlayLabel = null;
   let currentVideo = null;
   let hideTimer = null;
-  let pillFontsRegistered = false;
-
-  // Chromium is widely reported to ignore @font-face rules declared inside
-  // a shadow tree's own stylesheet -- font faces have to be registered at
-  // the document/global level via the FontFace API and document.fonts,
-  // which IS visible to shadow trees (including closed ones, like this
-  // overlay's). Namespaced family names ('LOADOUT ...') avoid ever
-  // colliding with a host page's own same-named font. Runs once; still
-  // uses chrome.runtime.getURL() for the font file URLs, same as before.
-  function registerPillFonts() {
-    if (pillFontsRegistered) {
-      return;
-    }
-    pillFontsRegistered = true;
-
-    const fonts = [
-      ['LOADOUT Press Start 2P', 'fonts/press-start-2p/PressStart2P-Regular.ttf'],
-      ['LOADOUT VT323', 'fonts/vt323/VT323-Regular.ttf'],
-    ];
-    for (const [family, path] of fonts) {
-      try {
-        const face = new FontFace(family, `url('${chrome.runtime.getURL(path)}')`);
-        face
-          .load()
-          .then((loadedFace) => {
-            document.fonts.add(loadedFace);
-          })
-          .catch(() => {
-            // Slow network, a strict CSP blocking the fetch, etc. -- the
-            // pill's CSS falls back to a generic `monospace` after each
-            // namespaced family name, so it still shows something readable
-            // rather than silently falling back to a system default with
-            // no pixel look at all.
-          });
-      } catch (err) {
-        // FontFace construction itself threw (e.g. unsupported API) --
-        // same fallback reasoning as above.
-      }
-    }
-  }
-  registerPillFonts();
 
   function ensureOverlay() {
     if (overlayHost) {
@@ -248,16 +199,9 @@
     const shadow = host.attachShadow({ mode: 'closed' });
     const style = document.createElement('style');
     style.textContent = `
-      :host {
-        --wood: #c98f4e;
-        --cream: #fff8ea;
-        --ink: #3a2410;
-        --ink-dim: #8a6b42;
-        --leaf: #5aa83c;
-      }
-      @keyframes popin {
-        from { transform: scale(.8); opacity: 0; }
-        to { transform: scale(1); opacity: 1; }
+      @keyframes fadein {
+        from { opacity: 0; }
+        to { opacity: 1; }
       }
       .pill {
         /* No position/top/right here (unlike the spec mockup's static demo
@@ -267,38 +211,45 @@
            existing, working tracking logic. */
         display: flex;
         align-items: center;
-        gap: 8px;
-        background: var(--cream);
-        border: 2px solid var(--ink);
-        padding: 8px 12px;
-        box-shadow: 3px 3px 0 0 var(--ink);
+        gap: 7px;
+        background: rgba(27, 31, 36, 0.92);
+        border: none;
+        border-radius: 7px;
+        padding: 7px 11px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
         cursor: pointer;
-        animation: popin .18s steps(4);
-        transition: transform .1s ease, box-shadow .08s ease, filter .1s ease;
+        /* A plain fade-in, not the old scale-up "pop" -- that animation's
+           transform was still running when positionOverlayFor() measured
+           the button right after showing it, which undercounted its real
+           width and let it land outside the video on some pages (it now
+           measures via offsetWidth, unaffected by transform either way,
+           but there's no reason to keep an animation this button no
+           longer needs). */
+        animation: fadein .12s ease;
+        transition: filter .1s ease;
         /* The host above sets pointer-events: none so its own box never
            captures clicks outside the button; this opts the pill itself
            back in, same role the old plain button selector's rule played. */
         pointer-events: auto;
       }
       .pill:hover {
-        filter: brightness(1.05);
+        filter: brightness(1.15);
       }
       .pill:active {
-        transform: translate(2px, 2px);
-        box-shadow: none;
+        filter: brightness(0.9);
       }
       .pill:disabled {
         opacity: 0.65;
         cursor: default;
       }
       .pill .sprite {
-        image-rendering: pixelated;
         flex-shrink: 0;
       }
       .pill .label {
-        font-family: 'LOADOUT Press Start 2P', monospace;
-        font-size: 9px;
-        color: var(--ink);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, Roboto, sans-serif;
+        font-size: 12px;
+        font-weight: 500;
+        color: #fff;
       }
     `;
     const button = document.createElement('button');
@@ -324,7 +275,7 @@
 
     const label = document.createElement('span');
     label.className = 'label';
-    label.textContent = 'HARVEST';
+    label.textContent = 'Download';
 
     button.appendChild(svg);
     button.appendChild(label);
@@ -401,7 +352,7 @@
       return;
     }
     overlayButton.disabled = false;
-    overlayLabel.textContent = 'HARVEST';
+    overlayLabel.textContent = 'Download';
   }
 
   function hideOverlayNow() {
