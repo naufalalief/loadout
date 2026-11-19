@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "LOADOUT Farm Log",
+  "productName": "Loadout",
   "version": "0.3.0",
-  "identifier": "com.downloadmanager.app",
+  "identifier": "com.naufalalief.loadout",
   "build": {
     "frontendDist": "../src"
   },
@@ -10,7 +10,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "LOADOUT FARM LOG",
+        "title": "Loadout",
         "visible": false,
         "width": 800,
         "height": 600,

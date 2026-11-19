@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "LOADOUT Farm Log",
+  "name": "Loadout",
   "version": "0.3.0",
-  "description": "Sends browser downloads to the LOADOUT Farm Log desktop app.",
+  "description": "Sends browser downloads to the Loadout desktop app.",
   "permissions": ["downloads", "cookies", "storage"],
   "host_permissions": ["http://127.0.0.1/*", "*://*/*"],
   "background": {

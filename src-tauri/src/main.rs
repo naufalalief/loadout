@@ -8,10 +8,10 @@ mod tray;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use loadout_farm_log::download::queue::QueueManager;
-use loadout_farm_log::extract::binaries::BinaryManager;
-use loadout_farm_log::extract::jobs::ExtractJobManager;
-use loadout_farm_log::server::{self, PairingState};
+use loadout::download::queue::QueueManager;
+use loadout::extract::binaries::BinaryManager;
+use loadout::extract::jobs::ExtractJobManager;
+use loadout::server::{self, PairingState};
 use tauri::Manager;
 use tauri_plugin_autostart::{MacosLauncher, ManagerExt};
 

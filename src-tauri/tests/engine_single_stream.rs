@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
-use loadout_farm_log::download::engine::{download_single_stream, probe};
-use loadout_farm_log::download::limiter::SpeedLimiter;
-use loadout_farm_log::download::types::{CancelToken, DownloadError, DownloadRequest, ProbeInfo};
+use loadout::download::engine::{download_single_stream, probe};
+use loadout::download::limiter::SpeedLimiter;
+use loadout::download::types::{CancelToken, DownloadError, DownloadRequest, ProbeInfo};
 
 use wiremock::matchers::{header, method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
