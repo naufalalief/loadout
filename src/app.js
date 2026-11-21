@@ -1200,6 +1200,24 @@ allowNewPairingBtn.addEventListener("click", async () => {
   }
 });
 
+// Persists one Settings field change immediately. `set_settings` stores
+// the whole DTO, not a diff, so `patch` is always merged onto the cached
+// `currentSettings` (refreshed from `get_settings` whenever Settings opens)
+// and the cache is only updated once the save succeeds. A failure is shown
+// in `#settings-error`. Returns whether the save succeeded.
+async function saveSettings(patch) {
+  hideError(settingsErrorEl);
+  const settings = { ...currentSettings, ...patch };
+  try {
+    await invoke("set_settings", { settings });
+    currentSettings = settings;
+    return true;
+  } catch (err) {
+    showError(settingsErrorEl, String(err));
+    return false;
+  }
+}
+
 // Settings gear (in the addbar): loads the current settings into the
 // Settings page's controls, then swaps to that page.
 shedBtn.addEventListener("click", async () => {
@@ -1238,7 +1256,11 @@ settingsBrowseDownloadDirEl.addEventListener("click", async () => {
   try {
     const picked = await invoke("pick_download_folder");
     if (picked) {
+      const previous = settingsDownloadDirEl.value;
       settingsDownloadDirEl.value = picked;
+      if (!(await saveSettings({ download_dir: picked }))) {
+        settingsDownloadDirEl.value = previous;
+      }
     }
   } catch (err) {
     console.error("pick_download_folder failed:", err);
@@ -1247,18 +1269,48 @@ settingsBrowseDownloadDirEl.addEventListener("click", async () => {
   }
 });
 
-settingHarvestChimeEl.addEventListener("click", () => {
-  setSwitch(settingHarvestChimeEl, !isSwitchOn(settingHarvestChimeEl));
+// Each switch saves itself on click; a failed save flips it back.
+settingHarvestChimeEl.addEventListener("click", async () => {
+  const next = !isSwitchOn(settingHarvestChimeEl);
+  setSwitch(settingHarvestChimeEl, next);
+  if (!(await saveSettings({ harvest_chime: next }))) setSwitch(settingHarvestChimeEl, !next);
 });
 
-settingAutoReplantEl.addEventListener("click", () => {
-  setSwitch(settingAutoReplantEl, !isSwitchOn(settingAutoReplantEl));
+settingAutoReplantEl.addEventListener("click", async () => {
+  const next = !isSwitchOn(settingAutoReplantEl);
+  setSwitch(settingAutoReplantEl, next);
+  if (!(await saveSettings({ auto_replant_failed: next }))) setSwitch(settingAutoReplantEl, !next);
 });
 
-// Unlike the two switches above (saved together with everything else when
-// Settings closes), "Start at login" applies immediately on click, via the
-// dedicated `set_autostart` command -- a toggle for a real OS-level effect
-// reads as instant.
+// Downloads-at-once and the default speed limit commit on blur or Enter
+// (a no-op when the value didn't actually change).
+function commitOnBlurOrEnter(inputEl, commit) {
+  inputEl.addEventListener("blur", commit);
+  inputEl.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      commit();
+    }
+  });
+}
+
+commitOnBlurOrEnter(settingsMaxConcurrentEl, () => {
+  // Same native `required`/`min`/`step` checks the old <form> ran.
+  if (!settingsMaxConcurrentEl.reportValidity()) return;
+  const value = parseInt(settingsMaxConcurrentEl.value, 10);
+  if (value === currentSettings.max_concurrent) return;
+  saveSettings({ max_concurrent: value });
+});
+
+commitOnBlurOrEnter(settingsSpeedLimitEl, () => {
+  const value = parseSpeedLimit(settingsSpeedLimitEl.value.trim());
+  if (value === (currentSettings.default_speed_limit_bytes_per_sec ?? null)) return;
+  saveSettings({ default_speed_limit_bytes_per_sec: value });
+});
+
+// Like the switches above, "Start at login" applies immediately on click,
+// but via its own dedicated `set_autostart` command (a real OS-level
+// effect) rather than `set_settings`.
 settingStartWithSeasonEl.addEventListener("click", async () => {
   const next = !isSwitchOn(settingStartWithSeasonEl);
   setSwitch(settingStartWithSeasonEl, next);
@@ -1289,38 +1341,11 @@ checkYtdlpUpdateBtn.addEventListener("click", async () => {
   }
 });
 
-// Settings has no Save button anymore: its "Close" link saves (the same
-// whole-DTO `set_settings` call the old form submit made) and only returns
-// to the ledger once that succeeds -- a failure stays on the page with the
-// error shown, exactly like the old form's submit did.
-async function saveSettingsAndClose() {
-  hideError(settingsErrorEl);
-  // The old <form> ran the field's native `required`/`min`/`step` checks
-  // before submitting; run them explicitly now that there's no form.
-  if (!settingsMaxConcurrentEl.reportValidity()) return;
-
-  const speedLimitRaw = settingsSpeedLimitEl.value.trim();
-  const settings = {
-    download_dir: settingsDownloadDirEl.value.trim(),
-    max_concurrent: parseInt(settingsMaxConcurrentEl.value, 10),
-    default_speed_limit_bytes_per_sec: parseSpeedLimit(speedLimitRaw),
-    harvest_chime: isSwitchOn(settingHarvestChimeEl),
-    auto_replant_failed: isSwitchOn(settingAutoReplantEl),
-    // Already applied live by its own click handler above; included here
-    // too so this save can't otherwise overwrite it back to a stale value
-    // (set_settings persists the whole DTO, not a diff).
-    start_with_the_season: isSwitchOn(settingStartWithSeasonEl),
-  };
-
-  try {
-    await invoke("set_settings", { settings });
-    currentSettings = settings;
-    showPage(ledgerPageEl);
-  } catch (err) {
-    showError(settingsErrorEl, String(err));
-  }
-}
-document.getElementById("settings-close-btn").addEventListener("click", saveSettingsAndClose);
+// Settings has no Save button: every field saves itself at its own commit
+// point (see the handlers above), so Close just navigates back.
+document.getElementById("settings-close-btn").addEventListener("click", () => {
+  showPage(ledgerPageEl);
+});
 
 // Settings' "Setup guide" link opens the Browser setup page; its Close and
 // "Installed it" both return to Settings (no persisted "has the user set

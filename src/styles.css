@@ -106,6 +106,7 @@ html, body { margin: 0; font-family: var(--font-ui); height: 100%; }
 
 /* Page wrappers: flex-column ancestor that .header/.body/.footer/.tbody/.tbody-empty rely on */
 #ledger-page, #settings-page, #browser-setup-page { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+#ledger-page.hidden, #settings-page.hidden, #browser-setup-page.hidden { display: none; }
 
 /* Settings + Browser-setup shared chrome */
 .header { height: 34px; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; padding: 0 12px; background: var(--chrome); border-bottom: 1px solid var(--border); font-size: 12.5px; font-weight: 600; }
