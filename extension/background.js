@@ -155,7 +155,11 @@ async function sendToApp(url, filename, headers) {
         },
       }),
     });
-    return response.status === 201;
+    if (response.status === 201) {
+      chrome.storage.local.set({ lastSent: { label: filename, sentAt: Date.now() } }).catch(() => {});
+      return true;
+    }
+    return false;
   } catch (err) {
     // The app may simply not be running (fetch to a closed/refused port
     // rejects), the request may have timed out (the AbortController fires,
@@ -266,6 +270,7 @@ async function sendExtractProbe(pageUrl, headers) {
       }),
     });
     if (response.status === 201) {
+      chrome.storage.local.set({ lastSent: { label: pageUrl, sentAt: Date.now() } }).catch(() => {});
       return { ok: true };
     }
     return { ok: false, error: `Extract request failed (status ${response.status}).` };
