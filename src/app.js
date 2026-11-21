@@ -264,13 +264,20 @@ function createRow(item) {
 
   const row = document.createElement("div");
   row.className = "trow";
+  // Focusable so a keyboard user can Tab onto the row itself and reveal
+  // `.acts` via `:focus-within` (below) -- without this, `.acts`'s buttons
+  // stay `display:none` until hovered, and a `display:none` element can
+  // never receive focus in the first place, so Tab would otherwise skip
+  // straight over every row's actions.
+  row.tabIndex = 0;
 
   const cName = makeCell("c-name");
   const cProgress = makeCell("c-progress");
   const cSize = makeCell("c-size");
   const cStatus = makeCell("c-status");
   const cDate = makeCell("c-date");
-  // Hover-only action links (CSS swaps `.acts` in for `.c-status` on hover).
+  // Hover-only action links (CSS swaps `.acts` in for `.c-status` on hover
+  // or keyboard focus -- see `.trow:focus-within` in styles.css).
   const acts = makeCell("acts");
   row.append(cName, cProgress, cSize, cStatus, cDate, acts);
 
@@ -409,7 +416,8 @@ function actionsForExtract(job, els) {
 // One `.uf-opt` row: icon + label. Clicking it closes the unfold first, then
 // runs `onClick` and (unless `skipRefresh`) refreshes the list.
 function makeUnfoldOption(rowId, entry) {
-  const opt = document.createElement("div");
+  const opt = document.createElement("button");
+  opt.type = "button";
   opt.className = entry.danger ? "uf-opt danger" : "uf-opt";
   opt.innerHTML = entry.icon ? ufIconMarkup(entry.icon) : "";
   const label = document.createElement("span");
@@ -526,7 +534,8 @@ function makeErrorLine(text) {
 // it swaps that row in place for the `.uf-form` input + Set button.
 function makeSpeedLimitOption(download) {
   const rowId = rowIdFor(download);
-  const opt = document.createElement("div");
+  const opt = document.createElement("button");
+  opt.type = "button";
   opt.className = "uf-opt";
   opt.innerHTML = ufIconMarkup("speed");
   const label = document.createElement("span");
@@ -582,7 +591,8 @@ function makeQualityPicker(job) {
   title.className = "uf-title";
   title.textContent = "Choose a quality";
   const opts = job.formats.map((format) => {
-    const opt = document.createElement("div");
+    const opt = document.createElement("button");
+    opt.type = "button";
     opt.className = "uf-opt";
     const label = document.createElement("span");
     label.textContent = format.label;
@@ -798,7 +808,8 @@ function updateExtractRow(els, job) {
 }
 
 function makeActionLink(label, onClick, danger) {
-  const link = document.createElement("span");
+  const link = document.createElement("button");
+  link.type = "button";
   if (danger) link.className = "danger";
   link.textContent = label;
   let busy = false;
@@ -819,7 +830,8 @@ function makeActionLink(label, onClick, danger) {
 
 function buildActionLink(els, action) {
   if (action.kind === "unfold") {
-    const link = document.createElement("span");
+    const link = document.createElement("button");
+    link.type = "button";
     if (action.primary) link.className = "primary";
     link.textContent = action.label;
     link.addEventListener("click", () => toggleUnfold(els.rowId));
@@ -1067,6 +1079,9 @@ function formatPairedAt(unixSeconds) {
 function buildProfileRow(profile) {
   const row = document.createElement("div");
   row.className = "prow";
+  // Focusable for the same reason `.trow` is (see createRow) -- reveals
+  // the hover-only "Forget" button via `.prow:focus-within` in styles.css.
+  row.tabIndex = 0;
 
   const left = document.createElement("div");
   const name = document.createElement("span");
@@ -1112,7 +1127,8 @@ function buildProfileRow(profile) {
     input.select();
   });
 
-  const forget = document.createElement("span");
+  const forget = document.createElement("button");
+  forget.type = "button";
   forget.className = "unpair";
   forget.textContent = "Forget";
   let busy = false;

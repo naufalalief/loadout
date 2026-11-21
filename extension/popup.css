@@ -29,7 +29,7 @@ html, body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe U
 .lastrow .k { color: var(--accent); flex-shrink: 0; cursor: pointer; }
 
 .footer { display: flex; align-items: center; justify-content: space-between; padding: 9px 16px; border-top: 1px solid var(--border); }
-.footer .link { font-size: 11.5px; color: var(--accent); cursor: pointer; }
+.footer .link { all: unset; font-size: 11.5px; color: var(--accent); cursor: pointer; }
 .footer .link:hover { text-decoration: underline; }
 .footer .v { font-size: 10.5px; color: var(--text-muted); }
 
