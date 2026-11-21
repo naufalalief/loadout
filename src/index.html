@@ -8,7 +8,7 @@
   </head>
   <body>
     <div class="win">
-      <div id="ledger-page" style="display: flex; flex-direction: column; flex: 1; min-height: 0;">
+      <div id="ledger-page">
         <form id="add-form" class="addbar">
           <svg id="addbar-icon" width="14" height="14" viewBox="0 0 24 24"></svg>
           <input
@@ -44,7 +44,7 @@
         <div id="queue-list" class="tbody hidden"></div>
       </div>
 
-      <div id="settings-page" class="hidden" style="display: flex; flex-direction: column; flex: 1; min-height: 0;">
+      <div id="settings-page" class="hidden">
         <div class="header">
           <span>Settings</span>
           <span class="close" id="settings-close-btn">Close</span>
@@ -125,7 +125,7 @@
               </div>
             </div>
             <div class="row">
-              <div class="t">
+              <div class="ctl">
                 <span class="dot" id="paired-profiles-dot"></span>
                 <span id="paired-profiles-count">0 browsers paired</span>
               </div>
@@ -181,11 +181,7 @@
         </div>
       </div>
 
-      <div
-        id="browser-setup-page"
-        class="hidden"
-        style="display: flex; flex-direction: column; flex: 1; min-height: 0;"
-      >
+      <div id="browser-setup-page" class="hidden">
         <div class="header">
           <span>Browser setup</span>
           <span class="close" id="browser-setup-close-btn">Close</span>
