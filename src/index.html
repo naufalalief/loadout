@@ -8,325 +8,243 @@
   </head>
   <body>
     <div class="win">
-    <div class="content">
-    <section id="add-panel" class="panel hidden">
-      <form id="add-form" class="panel-card">
-        <div class="popup-titlebar">
-          <div class="tgroup">
-            <svg
-              id="add-panel-appicon"
-              class="appicon"
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-            ></svg>
-            <div class="t">Add download</div>
-          </div>
-          <button type="button" class="wb close" id="add-panel-close" aria-label="Close">X</button>
-        </div>
-        <div class="panel-card-body">
-        <div class="hero">
-          <div class="heroslot">
-            <svg
-              id="add-seed-icon"
-              class="sprite"
-              width="34"
-              height="34"
-              viewBox="0 0 24 24"
-            ></svg>
-          </div>
-          <div class="herotext">Paste a link, or a video page URL -- Loadout detects which one automatically.</div>
-        </div>
-        <div class="field">
-          <label for="add-url">URL</label>
-          <input id="add-url" type="text" placeholder="https://example.com/file.zip" required />
-        </div>
-        <div class="field">
-          <label for="add-filename">SAVE AS</label>
-          <input id="add-filename" type="text" placeholder="(optional) file.zip" />
-        </div>
+      <div id="ledger-page">
+        <form id="add-form" class="addbar">
+          <svg id="addbar-icon" width="14" height="14" viewBox="0 0 24 24"></svg>
+          <input
+            id="add-url"
+            type="text"
+            class="addfield"
+            placeholder="Paste a link, press enter"
+            required
+          />
+          <button type="button" class="settingsbtn" id="shedbtn" title="Settings">
+            <svg id="shedbtn-icon" width="17" height="17" viewBox="0 0 24 24"></svg>
+          </button>
+        </form>
+
         <p id="add-error" class="error hidden"></p>
-        <div class="panel-actions">
-          <button type="button" class="btn secondary" id="cancel-add-btn">Cancel</button>
-          <button type="submit" class="btn primary" id="add-submit-btn">Add</button>
-        </div>
-        </div>
-      </form>
-    </section>
 
-    <section id="settings-panel" class="panel hidden">
-      <form id="settings-form" class="panel-card">
-        <div class="popup-titlebar">
-          <div class="tgroup">
-            <svg
-              id="settings-panel-appicon"
-              class="appicon"
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-            ></svg>
-            <div class="t">Settings</div>
-          </div>
-          <button type="button" class="wb close" id="settings-panel-close" aria-label="Close">X</button>
+        <div class="thead">
+          <span class="c-name">Name</span>
+          <span class="c-progress">Progress</span>
+          <span class="c-size">Size</span>
+          <span class="c-status">Status</span>
+          <span class="c-date">Added</span>
         </div>
-        <div class="panel-card-body">
-        <div class="srow">
-          <div>
-            <div class="slabel">Download folder</div>
-            <div class="ssub">Where finished downloads are saved</div>
-          </div>
-          <div class="pathbox">
-            <input
-              id="settings-download-dir"
-              type="text"
-              class="smallinput pathinput"
-              readonly
-              required
-            />
-            <button type="button" id="settings-browse-download-dir" class="changebtn">Change</button>
+
+        <div id="empty-state" class="tbody-empty hidden">
+          <div class="emptymsg">
+            <svg id="empty-state-icon" width="46" height="46" viewBox="0 0 24 24"></svg>
+            <div class="h">No downloads yet</div>
+            <div class="sub">Add a link above, or drag a file/video page from your browser once the extension is installed.</div>
           </div>
         </div>
 
-        <div class="srow">
-          <div>
-            <div class="slabel">Downloads at once</div>
-            <div class="ssub">Max simultaneous downloads</div>
+        <div id="queue-list" class="tbody hidden"></div>
+      </div>
+
+      <div id="settings-page" class="hidden">
+        <div class="header">
+          <span>Settings</span>
+          <span class="close" id="settings-close-btn">Close</span>
+        </div>
+        <div class="body">
+          <div class="section">
+            <div class="h">Transfers</div>
+            <div class="row">
+              <div class="t">
+                <div class="l">Download folder</div>
+                <div class="d">Where finished downloads are saved</div>
+              </div>
+              <div class="ctl">
+                <input id="settings-download-dir" type="text" class="pathval" readonly />
+                <button type="button" id="settings-browse-download-dir" class="btn">Change</button>
+              </div>
+            </div>
+            <div class="row">
+              <div class="t">
+                <div class="l">Downloads at once</div>
+                <div class="d">Max simultaneous downloads</div>
+              </div>
+              <div class="ctl">
+                <input id="settings-max-concurrent" type="number" class="smallinput" min="1" step="1" required />
+              </div>
+            </div>
+            <div class="row">
+              <div class="t">
+                <div class="l">Speed limit</div>
+                <div class="d">Default speed limit, bytes/sec (0 = no limit)</div>
+              </div>
+              <div class="ctl">
+                <input
+                  id="settings-speed-limit"
+                  type="text"
+                  inputmode="numeric"
+                  class="smallinput"
+                  placeholder="No limit"
+                />
+              </div>
+            </div>
           </div>
-          <div class="pathbox">
-            <input
-              id="settings-max-concurrent"
-              type="number"
-              class="smallinput numinput"
-              min="1"
-              step="1"
-              required
-            />
+
+          <div class="section">
+            <div class="h">Browser Companion</div>
+            <div class="row">
+              <div class="t">
+                <div class="l">Video tools</div>
+                <div id="ytdlp-update-status" class="ssub"></div>
+              </div>
+              <div class="ctl">
+                <button type="button" id="check-ytdlp-update-btn" class="btn">Check for update</button>
+              </div>
+            </div>
+            <div class="row">
+              <div class="t">
+                <div class="l">Hover-to-download button</div>
+                <div class="d">Set up the extension's hover-to-download button</div>
+              </div>
+              <div class="ctl">
+                <span class="link" id="browser-setup-btn">Setup guide</span>
+              </div>
+            </div>
+            <div class="row">
+              <div class="t">
+                <div class="l">Allow new pairing</div>
+                <div id="allow-pairing-status" class="ssub">Lets one more browser profile connect, for 2 minutes</div>
+              </div>
+              <div class="ctl">
+                <button type="button" id="allow-new-pairing-btn" class="btn">Allow</button>
+              </div>
+            </div>
+            <div class="row">
+              <div class="t">
+                <div class="l">Paired browsers</div>
+                <div id="paired-profiles-empty" class="ssub">No browsers paired yet.</div>
+                <div id="paired-profiles-list" class="profilelist"></div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="ctl">
+                <span class="dot" id="paired-profiles-dot"></span>
+                <span id="paired-profiles-count">0 browsers paired</span>
+              </div>
+            </div>
           </div>
-        </div>
 
-        <div class="srow">
-          <div>
-            <div class="slabel">Speed limit</div>
-            <div class="ssub">Default speed limit, bytes/sec (0 = no limit)</div>
+          <div class="section">
+            <div class="h">Preferences</div>
+            <div class="row">
+              <div class="t">
+                <div class="l">Download chime</div>
+                <div class="d">Play a sound when a download finishes</div>
+              </div>
+              <div class="ctl">
+                <button type="button" id="setting-harvest-chime" class="toggle" aria-label="Download chime">
+                  <span class="thumb"></span>
+                </button>
+              </div>
+            </div>
+            <div class="row">
+              <div class="t">
+                <div class="l">Auto-retry failed downloads</div>
+                <div class="d">Retry failed downloads automatically</div>
+              </div>
+              <div class="ctl">
+                <button
+                  type="button"
+                  id="setting-auto-replant"
+                  class="toggle"
+                  aria-label="Auto-retry failed downloads"
+                >
+                  <span class="thumb"></span>
+                </button>
+              </div>
+            </div>
+            <div class="row">
+              <div class="t">
+                <div class="l">Start at login</div>
+                <div class="d">Launch Loadout when you log in</div>
+              </div>
+              <div class="ctl">
+                <button type="button" id="setting-start-with-season" class="toggle" aria-label="Start at login">
+                  <span class="thumb"></span>
+                </button>
+              </div>
+            </div>
           </div>
-          <div class="pathbox">
-            <input
-              id="settings-speed-limit"
-              type="text"
-              inputmode="numeric"
-              class="smallinput"
-              placeholder="No limit"
-            />
-          </div>
-        </div>
 
-        <div class="srow">
-          <div>
-            <div class="slabel">Video tools</div>
-            <div id="ytdlp-update-status" class="ssub"></div>
-          </div>
-          <button type="button" id="check-ytdlp-update-btn" class="changebtn">Check for update</button>
+          <p id="settings-error" class="error hidden"></p>
         </div>
-
-        <div class="srow">
-          <div>
-            <div class="slabel">Browser Companion</div>
-            <div class="ssub">Set up the extension's hover-to-download button</div>
-          </div>
-          <button type="button" id="browser-setup-btn" class="changebtn">Set up</button>
-        </div>
-
-        <div class="srow">
-          <div>
-            <div class="slabel">Allow new pairing</div>
-            <div id="allow-pairing-status" class="ssub">Lets one more browser profile connect, for 2 minutes</div>
-          </div>
-          <button type="button" id="allow-new-pairing-btn" class="changebtn">Allow</button>
-        </div>
-
-        <div class="srow profiles-srow">
-          <div class="profiles-col">
-            <div class="slabel">Paired browsers</div>
-            <div id="paired-profiles-empty" class="ssub">No browsers paired yet.</div>
-            <div id="paired-profiles-list" class="profilelist"></div>
-          </div>
-        </div>
-
-        <div class="srow">
-          <div>
-            <div class="slabel">Download chime</div>
-            <div class="ssub">Play a sound when a download finishes</div>
-          </div>
-          <button type="button" id="setting-harvest-chime" class="switch" aria-label="Download chime">
-            <span class="thumb"></span>
-          </button>
-        </div>
-
-        <div class="srow">
-          <div>
-            <div class="slabel">Auto-retry failed downloads</div>
-            <div class="ssub">Retry failed downloads automatically</div>
-          </div>
-          <button type="button" id="setting-auto-replant" class="switch" aria-label="Auto-retry failed downloads">
-            <span class="thumb"></span>
-          </button>
-        </div>
-
-        <div class="srow srow-last">
-          <div>
-            <div class="slabel">Start at login</div>
-            <div class="ssub">Launch Loadout when you log in</div>
-          </div>
-          <button type="button" id="setting-start-with-season" class="switch" aria-label="Start at login">
-            <span class="thumb"></span>
-          </button>
-        </div>
-
-        <p id="settings-error" class="error hidden"></p>
-
-        <div class="about">
-          <div class="aboutslot">
-            <svg
-              id="settings-about-icon"
-              class="sprite"
-              width="26"
-              height="26"
-              viewBox="0 0 24 24"
-            ></svg>
-          </div>
-          <div class="aboutver">Loadout &mdash; v1.0</div>
-        </div>
-
-        <div class="panel-actions">
-          <button type="button" class="btn secondary" id="cancel-settings-btn">Cancel</button>
-          <button type="submit" class="btn primary">Save</button>
-        </div>
-        </div>
-      </form>
-    </section>
-
-    <section id="browser-setup-panel" class="panel hidden">
-      <div class="panel-card">
-        <div class="popup-titlebar">
-          <div class="tgroup">
-            <svg
-              id="browser-setup-panel-appicon"
-              class="appicon"
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-            ></svg>
-            <div class="t">Browser companion setup</div>
-          </div>
-          <button type="button" class="wb close" id="browser-setup-panel-close" aria-label="Close">X</button>
-        </div>
-        <div class="panel-card-body">
-        <div class="intro">The Browser Companion adds a <b>Download</b> button when you hover a video, and sends
-          links straight to Loadout. It's a one-time, 1-minute setup &mdash; you won't need to do this again.</div>
-
-        <div class="step">
-          <div class="stepnum">1</div>
-          <div class="steptext">
-            <div class="stitle">Open your browser's extensions page</div>
-            <div class="shint">chrome://extensions</div>
-            <button type="button" class="stepbtn" id="setup-open-page-btn">Open page</button>
-            <!-- `.ssub`, same neutral status-text class/toggle idiom as the
-                 Settings panel's `ytdlp-update-status` -- plain text by
-                 default, only gets `.error` added (existing global
-                 `.ssub.error{color:var(--berry)}` rule) on a real failure,
-                 so a normal "we tried to open it" confirmation never renders
-                 in error-red. -->
-            <div id="setup-page-status" class="ssub"></div>
-          </div>
-        </div>
-
-        <div class="step">
-          <div class="stepnum">2</div>
-          <div class="steptext">
-            <div class="stitle">Turn on Developer mode</div>
-            <div class="shint">Toggle switch, top-right corner of that page</div>
-          </div>
-        </div>
-
-        <div class="step">
-          <div class="stepnum">3</div>
-          <div class="steptext">
-            <div class="stitle">Open the companion's folder</div>
-            <div class="shint">Where it lives on your computer</div>
-            <button type="button" class="stepbtn" id="setup-open-folder-btn">Open folder</button>
-          </div>
-        </div>
-
-        <div class="step">
-          <div class="stepnum">4</div>
-          <div class="steptext">
-            <div class="stitle">Click "Load unpacked", then pick that folder</div>
-            <div class="shint">The companion will show up in your extensions list, ready to go</div>
-          </div>
-        </div>
-
-        <div class="tip">
-          <div class="glyph">&#128204;</div>
-          <div class="ttext">Tip: pin it to your toolbar (the puzzle-piece icon in Chrome) so the Download button
-            is always one click away.</div>
-        </div>
-
-        <p id="browser-setup-error" class="error hidden"></p>
-
-        <!-- `.panel-actions`, not the spec's literal `.actions` -- `.actions`
-             already names the unrelated per-row action-button container
-             (see `.row .actions` / `app.js`'s `actionsFor`), so reusing that
-             bare class name here would leak its `gap:4px`/`flex-shrink:0`
-             row-button sizing into this popup's Skip/Done row instead of the
-             spec's own `gap:10px`/`padding:4px 0 20px` actions-row rule.
-             `.panel-actions` is this codebase's own existing name for a
-             popup's bottom button row (Add Download/Settings use it too). -->
-        <div class="panel-actions">
-          <button type="button" class="btn secondary" id="setup-skip-btn">Skip for now</button>
-          <button type="button" class="btn primary" id="setup-done-btn">&#10003; Installed it</button>
-        </div>
+        <div class="footer">
+          <span>Loadout &mdash; v1.0</span>
         </div>
       </div>
-    </section>
 
-    <button type="button" class="addrow" id="addrow-btn">
-      <span class="label">+ Add download</span>
-    </button>
-
-    <main id="queue">
-      <div id="empty-state" class="empty hidden">
-        <div class="potslot">
-          <svg
-            id="empty-pot-icon"
-            class="sprite"
-            width="46"
-            height="46"
-            viewBox="0 0 24 24"
-          ></svg>
+      <div id="browser-setup-page" class="hidden">
+        <div class="header">
+          <span>Browser setup</span>
+          <span class="close" id="browser-setup-close-btn">Close</span>
         </div>
-        <div class="etitle">No downloads yet</div>
-        <div class="esub">Add a link above, or drag a file/video page from your browser once the extension is installed.</div>
-        <button type="button" class="ebtn" id="empty-add-btn">+ Add download</button>
-      </div>
-      <div id="queue-list"></div>
-    </main>
-    </div>
+        <div class="body">
+          <div class="intro">The Browser Companion adds a <b>Download</b> button when you hover a video, and sends
+            links straight to Loadout. It's a one-time, 1-minute setup &mdash; you won't need to do this again.</div>
 
-    <div class="statusbar">
-      <div class="statustext">
-        <span id="status-tasks">0 downloads</span>
-        <span id="status-working">No active downloads</span>
+          <div class="step">
+            <div class="num">1</div>
+            <div class="stepbody">
+              <div class="t">Open your browser's extensions page</div>
+              <div class="d"><span class="pathbit">chrome://extensions</span></div>
+              <button type="button" class="btn" id="setup-open-page-btn">Open page</button>
+              <!-- `.ssub`, same neutral status-text class/toggle idiom as the
+                   Settings page's `ytdlp-update-status` -- plain text by
+                   default, only gets `.error` added (existing global
+                   `.ssub.error{color:var(--danger)}` rule) on a real failure,
+                   so a normal "we tried to open it" confirmation never renders
+                   in error-red. -->
+              <div id="setup-page-status" class="ssub"></div>
+            </div>
+          </div>
+
+          <div class="step">
+            <div class="num">2</div>
+            <div class="stepbody">
+              <div class="t">Turn on Developer mode</div>
+              <div class="d">Toggle switch, top-right corner of that page</div>
+            </div>
+          </div>
+
+          <div class="step">
+            <div class="num">3</div>
+            <div class="stepbody">
+              <div class="t">Open the companion's folder</div>
+              <div class="d">Where it lives on your computer</div>
+              <button type="button" class="btn" id="setup-open-folder-btn">Open folder</button>
+            </div>
+          </div>
+
+          <div class="step">
+            <div class="num">4</div>
+            <div class="stepbody">
+              <div class="t">Click "Load unpacked", then pick that folder</div>
+              <div class="d">The companion will show up in your extensions list, ready to go</div>
+            </div>
+          </div>
+
+          <div class="intro">&#128204; Tip: pin it to your toolbar (the puzzle-piece icon in Chrome) so the Download
+            button is always one click away.</div>
+
+          <p id="browser-setup-error" class="error hidden"></p>
+        </div>
+        <div class="footer">
+          <button type="button" class="btn primary" id="setup-done-btn">Installed it</button>
+        </div>
       </div>
-      <button type="button" class="shedbtn" id="shedbtn" title="Settings">
-        <svg
-          id="shedbtn-icon"
-          class="ticon"
-          width="17"
-          height="17"
-          viewBox="0 0 24 24"
-        ></svg>
-      </button>
-    </div>
+
+      <div class="statusbar">
+        <span id="status-tasks">0 items</span>
+        <span id="status-working"></span>
+      </div>
     </div>
 
     <script type="module" src="app.js"></script>

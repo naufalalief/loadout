@@ -148,4 +148,8 @@ pub struct DownloadInfo {
     pub downloaded_bytes: u64,
     pub status: DownloadStatus,
     pub error: Option<String>,
+    /// Unix seconds when this download was first added to the queue; absent
+    /// (defaults to `0`) in state files persisted before this field existed.
+    #[serde(default)]
+    pub created_at: i64,
 }

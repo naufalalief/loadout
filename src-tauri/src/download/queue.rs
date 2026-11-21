@@ -29,6 +29,16 @@ const RESERVED_WINDOWS_NAMES: &[&str] = &[
     "COM9", "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9",
 ];
 
+/// Current time as unix seconds, used to stamp `created_at` on newly
+/// created `DownloadInfo`/`ExtractJobInfo` entries. Falls back to `0` on a
+/// clock error rather than panicking.
+pub(crate) fn now_unix() -> i64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs() as i64)
+        .unwrap_or(0)
+}
+
 /// What `run()` does with whatever its download produced, decided from the
 /// entry's authoritative current state under the `downloads` lock (see
 /// `Inner::resolve`).
@@ -228,6 +238,7 @@ impl QueueManager {
                 downloaded_bytes: 0,
                 status: DownloadStatus::Queued,
                 error: None,
+                created_at: now_unix(),
             });
             ((), true)
         });

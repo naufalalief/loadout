@@ -1,1052 +1,175 @@
 :root {
-  /* Loadout palette -- cool neutrals + one clear accent, status colors kept
-     muted rather than candy-bright. System font stacks, not a bundled
-     webfont: this is a desktop app that must work fully offline, so there
-     is nothing to fetch from a network and nothing to bundle/update. */
-  --bg: #eef0f3;
-  --surface: #ffffff;
-  --surface-sunken: #f7f8fa;
-  --border: #dfe3e8;
-  --border-strong: #c7ccd4;
-  --ink: #1b1f24;
-  --ink-dim: #6b7280;
-  --accent: #2f6fed;
-  --accent-dim: #e8eefd;
-  --success: #1f9254;
-  --warn: #b7791f;
-  --danger: #c0392b;
-
-  --font-ui:
-    -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, Roboto, sans-serif;
-  --font-mono:
-    ui-monospace, "Cascadia Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --bg: #ffffff;
+  --chrome: #f3f3f3;
+  --zebra: #f7f8fa;
+  --border: #e2e2e4;
+  --text: #1a1a1a;
+  --text-muted: #6e6e6e;
+  --accent: #0067c0;
+  --danger: #c42b1c;
+  --ok: #107c10;
+  --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, Roboto, sans-serif;
 }
-
-* {
-  box-sizing: border-box;
-}
-
-/* Every icon in the app (.sprite: row icons + the static ones below;
-   .appicon: the three popups' own title bar icon; .ticon: the Settings
-   button) is a plain stroke-based line icon, 24x24 viewBox, no fill --
-   one shared rule instead of repeating these on every <svg>. Color comes
-   from the icon's own slot (.slot/.heroslot/.aboutslot/etc. each set
-   their own `color`). */
-.sprite,
-.appicon,
-.ticon {
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.6;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-/* This is a desktop app, not a web page -- text behaving like selectable
-   page content (the empty-state message highlighting blue on a stray
-   click/drag) reads as a bug, not a feature. Re-enabled narrowly for the
-   few elements that are genuinely text fields (`input`, `textarea`) further
-   down this file, where normal text-selection/editing is expected. */
-html,
-body {
-  -webkit-user-select: none;
-  user-select: none;
-}
-input,
-textarea {
-  -webkit-user-select: text;
-  user-select: text;
-}
-
-/* The window uses the OS's own native title bar and border now
-   (tauri.conf.json `"decorations": true"`, `"transparent": false`) --
-   `.win` just fills it, no floating-card border/shadow/radius of its
-   own to fake a window edge the OS already draws. */
-html,
-body {
-  background: var(--surface);
-  margin: 0;
-}
-body {
-  font-family: var(--font-ui);
-  font-size: 14px;
-  color: var(--ink);
-  height: 100vh;
-  display: flex;
-  overflow: hidden;
-}
+html, body { margin: 0; font-family: var(--font-ui); height: 100%; }
+* { box-sizing: border-box; }
 
 .win {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  background: var(--surface);
-  overflow: hidden;
+  width: 100%; height: 100vh; box-sizing: border-box;
+  background: var(--bg); color: var(--text);
+  display: flex; flex-direction: column; overflow: hidden;
 }
 
-/* Scrolling region between the fixed title bar and status bar (Add Download/
-   Settings panels, the "+ Add download" row, and the queue). `.titlebar`/
-   `.statusbar` are fixed-size flex items (see their own rules below) so they
-   never scroll off-screen; this wrapper absorbs all remaining vertical space
-   and scrolls internally instead of the whole page scrolling. */
-.content {
-  flex: 1;
-  overflow: auto;
-  background: var(--surface);
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
+/* Addbar (persistent, always visible on the ledger page) */
+.addbar { height: 34px; flex-shrink: 0; display: flex; align-items: center; gap: 7px; padding: 0 8px 0 10px; background: var(--chrome); border-bottom: 1px solid var(--border); }
+.addbar svg { color: var(--text-muted); flex-shrink: 0; display: block; }
+.addfield { flex: 1; border: none; background: none; font-size: 12.5px; color: var(--text); outline: none; font-family: inherit; }
+.addfield::placeholder { color: var(--text-muted); }
+.settingsbtn { display: flex; align-items: center; justify-content: center; width: 25px; height: 25px; flex-shrink: 0; border-radius: 3px; background: transparent; border: none; color: var(--text-muted); cursor: pointer; }
+.settingsbtn:hover { background: rgba(0, 0, 0, 0.07); color: var(--text); }
+.settingsbtn svg { display: block; }
+#add-error { font-size: 11.5px; color: var(--danger); padding: 4px 10px; }
+#add-error.hidden { display: none; }
+
+/* Table header */
+.thead { display: flex; align-items: center; height: 25px; flex-shrink: 0; background: var(--chrome); border-bottom: 1px solid var(--border); font-size: 11px; font-weight: 600; color: var(--text-muted); padding: 0 10px; gap: 10px; }
+.thead .c-name { flex: 1; min-width: 0; }
+.thead .c-size { width: 60px; flex-shrink: 0; text-align: right; }
+.thead .c-progress { width: clamp(140px, 20vw, 340px); flex-shrink: 0; }
+.thead .c-status { width: 84px; flex-shrink: 0; }
+.thead .c-date { width: 72px; flex-shrink: 0; text-align: right; }
+
+/* Table body / rows */
+.tbody { flex: 1; overflow: auto; }
+.trow { display: flex; align-items: center; height: 30px; padding: 0 10px; gap: 10px; border-bottom: 1px solid var(--border); font-size: 12.5px; position: relative; }
+.trow:nth-child(even of .trow) { background: var(--zebra); }
+.trow .c-name { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.trow .c-size { width: 60px; flex-shrink: 0; text-align: right; color: var(--text-muted); }
+.trow .c-progress { width: clamp(140px, 20vw, 340px); flex-shrink: 0; display: flex; align-items: center; gap: 8px; }
+.trow .c-progress .bar { flex: 1; height: 6px; border-radius: 3px; background: var(--border); overflow: hidden; }
+.trow .c-progress .bar .fill { height: 100%; background: var(--accent); border-radius: 3px; }
+.trow .c-progress .pct { font-size: 11px; color: var(--text-muted); width: 32px; text-align: right; flex-shrink: 0; font-variant-numeric: tabular-nums; }
+.trow .c-status { width: 84px; flex-shrink: 0; display: flex; align-items: center; gap: 5px; color: var(--text-muted); white-space: nowrap; }
+.trow .c-date { width: 72px; flex-shrink: 0; text-align: right; color: var(--text-muted); white-space: nowrap; }
+.trow .c-status svg { flex-shrink: 0; display: block; }
+.trow .c-status.failed { color: var(--danger); }
+.trow .c-status.choose { color: var(--accent); cursor: pointer; }
+.trow .c-status.choose svg { transition: transform .12s ease; }
+.trow.open .c-status.choose svg { transform: rotate(180deg); }
+.trow .acts { display: none; gap: 10px; width: 84px; flex-shrink: 0; justify-content: flex-end; font-size: 12px; }
+.trow .acts span { cursor: pointer; color: var(--text-muted); }
+.trow .acts span:hover { color: var(--text); }
+.trow .acts span.primary { color: var(--accent); }
+.trow .acts span.danger:hover { color: var(--danger); }
+.trow:hover .c-status { display: none; }
+.trow:hover .acts { display: flex; }
+.trow.open { background: var(--zebra); }
+
+/* Status bar */
+.statusbar { height: 24px; flex-shrink: 0; display: flex; align-items: center; gap: 6px; padding: 0 10px; background: var(--chrome); border-top: 1px solid var(--border); font-size: 11px; color: var(--text-muted); }
+
+/* Empty state */
+.tbody-empty { flex: 1; display: flex; align-items: center; justify-content: center; }
+.emptymsg { text-align: center; max-width: 280px; }
+.emptymsg svg { color: var(--text-muted); margin-bottom: 10px; }
+.emptymsg .h,
+.emptymsg .etitle { font-size: 13px; color: var(--text); margin-bottom: 4px; }
+.emptymsg .sub,
+.emptymsg .esub { font-size: 11.5px; color: var(--text-muted); line-height: 1.4; }
+
+/* Responsive breakpoints -- must stay exactly these two */
+@media (max-width: 760px) {
+  .thead .c-date, .trow .c-date { display: none; }
+}
+@media (max-width: 560px) {
+  .thead .c-size, .trow .c-size { display: none; }
+  .thead .c-progress, .trow .c-progress { width: 96px; }
 }
 
-.popup-titlebar .tgroup {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.popup-titlebar .appicon {
-  flex-shrink: 0;
-  color: var(--accent);
-}
-.popup-titlebar .t {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--ink);
-  letter-spacing: 0.1px;
-}
-.wb {
-  width: 24px;
-  height: 24px;
-  padding: 0;
-  margin: 0;
-  background: transparent;
-  border: none;
-  border-radius: 5px;
-  color: var(--ink-dim);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  font-family: inherit;
-  cursor: pointer;
-  transition: background 0.1s ease;
-}
-.wb:hover {
-  background: var(--bg);
-}
-.wb:active {
-  background: var(--border);
-}
-.wb.close:hover {
-  background: #fbe8e6;
-  color: var(--danger);
-}
+/* Unfold: the one accordion panel used for right-click menu, quality picker,
+   AND the per-row speed-limit mini-form (three real mechanisms unified) */
+.unfold { background: var(--zebra); border-bottom: 1px solid var(--border); padding: 2px 10px 10px; display: none; }
+.unfold.hidden { display: none; }
+.trow.open + .unfold { display: block; }
+.unfold .uf-title { font-size: 11px; font-weight: 600; color: var(--text-muted); padding: 8px 8px 6px; }
+.unfold .uf-error { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--danger); padding: 8px 8px 4px; }
+.unfold .uf-error svg { flex-shrink: 0; display: block; }
+.unfold .uf-opt { display: flex; align-items: center; gap: 8px; padding: 7px 8px; border-radius: 3px; font-size: 12.5px; color: var(--text); cursor: pointer; }
+.unfold .uf-opt:hover { background: rgba(0, 103, 192, 0.08); }
+.unfold .uf-opt.danger:hover { background: rgba(196, 43, 28, 0.08); color: var(--danger); }
+.unfold .uf-opt svg { flex-shrink: 0; display: block; color: var(--text-muted); }
+.unfold .uf-opt .uf-size { font-size: 11.5px; color: var(--text-muted); margin-left: auto; }
+.unfold .uf-div { height: 1px; background: var(--border); margin: 4px 4px; }
+.unfold .uf-form { display: flex; gap: 8px; padding: 7px 8px; align-items: center; }
+.unfold .uf-form input { flex: 1; height: 24px; padding: 0 8px; border: 1px solid var(--border); border-radius: 3px; font-size: 12px; font-family: inherit; }
+.unfold .uf-form button { height: 24px; padding: 0 10px; border: 1px solid var(--border); border-radius: 3px; background: var(--bg); font-size: 12px; cursor: pointer; }
+.unfold .uf-form button:hover { background: var(--chrome); }
 
-/* "+ Add download" row above the queue list (spec Appendix A `.addrow`),
-   always visible regardless of whether the list is empty --
-   `refreshList()` only toggles `.empty`/`#queue-list`, never this row. */
-.addrow {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  width: calc(100% - 20px);
-  margin: 10px 10px 10px;
-  border: none;
-  border-radius: 6px;
-  padding: 9px;
-  cursor: pointer;
-  background: var(--accent);
-  color: #fff;
-  transition: background 0.12s ease;
-}
-.addrow:hover {
-  background: #2a5fd0;
-}
-.addrow:active {
-  background: #2554ba;
-}
-.addrow .label {
-  font-size: 13px;
-  font-weight: 500;
-}
+/* Page wrappers: flex-column ancestor that .header/.body/.footer/.tbody/.tbody-empty rely on */
+#ledger-page, #settings-page, #browser-setup-page { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+#ledger-page.hidden, #settings-page.hidden, #browser-setup-page.hidden { display: none; }
 
-/* Status bar (spec Appendix A `.statusbar`/`.shedbtn`): task/working counts
-   on the left, the Settings button on the right. */
-.statusbar {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 9px 12px 9px 14px;
-  border-top: 1px solid var(--border);
-  background: var(--bg);
-  font-size: 12px;
-  color: var(--ink-dim);
-  flex: 0 0 auto;
-}
-.statustext {
-  display: flex;
-  gap: 14px;
-}
-.shedbtn {
-  width: 26px;
-  height: 26px;
-  margin-left: auto;
-  padding: 0;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  flex-shrink: 0;
-  color: var(--ink-dim);
-  transition: background 0.1s ease;
-}
-.shedbtn:hover {
-  background: var(--bg);
-}
-.shedbtn .ticon {
-  display: block;
-}
+/* Settings + Browser-setup shared chrome */
+.header { height: 34px; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; padding: 0 12px; background: var(--chrome); border-bottom: 1px solid var(--border); font-size: 12.5px; font-weight: 600; }
+.header .close { font-size: 12px; font-weight: 400; color: var(--accent); cursor: pointer; }
+.header .close:hover { text-decoration: underline; }
+.body { flex: 1; overflow: auto; padding: 14px 18px 6px; }
+.footer { height: 36px; flex-shrink: 0; display: flex; align-items: center; padding: 0 16px; border-top: 1px solid var(--border); font-size: 11px; color: var(--text-muted); }
+#settings-page .footer { justify-content: space-between; }
+#browser-setup-page .footer { justify-content: flex-end; height: 44px; }
+.btn { height: 26px; padding: 0 12px; border: 1px solid var(--border); border-radius: 3px; font-size: 12px; color: var(--text); background: var(--bg); cursor: pointer; font-family: inherit; white-space: nowrap; }
+.btn:hover { background: var(--chrome); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn.primary:hover { filter: brightness(0.95); }
+.link { font-size: 12px; color: var(--accent); cursor: pointer; }
+.link:hover { text-decoration: underline; }
 
-/* Empty state (spec Appendix B), shown in place of #queue-list when the
-   merged items list is empty. `.empty` is declared *before* the bare
-   `.hidden` utility below, so at equal specificity `.hidden`'s
-   `display: none` already wins by source order on its own -- no
-   `.empty.hidden` override is needed here. */
-.empty {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 70px 30px;
-  text-align: center;
-  gap: 14px;
-}
-.potslot {
-  width: 56px;
-  height: 56px;
-  color: var(--ink-dim);
-  opacity: 0.6;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.etitle {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--ink);
-}
-.esub {
-  font-size: 13px;
-  color: var(--ink-dim);
-  max-width: 320px;
-  line-height: 1.5;
-}
-.ebtn {
-  margin-top: 4px;
-  font-size: 13px;
-  font-weight: 500;
-  color: #fff;
-  background: var(--accent);
-  border: none;
-  border-radius: 6px;
-  padding: 9px 16px;
-  cursor: pointer;
-  transition: background 0.12s ease;
-}
-.ebtn:hover {
-  background: #2a5fd0;
-}
+/* Settings body */
+.section { margin-bottom: 18px; }
+.section .h { font-size: 12.5px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
+.row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.section .row:last-child { border-bottom: none; }
+.row .t { min-width: 0; }
+.row .t .l,
+.row .slabel { font-size: 12.5px; color: var(--text); }
+.row .t .d,
+.row .ssub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+.row .ctl { flex-shrink: 0; display: flex; align-items: center; gap: 8px; }
+.toggle { width: 34px; height: 19px; border-radius: 10px; background: var(--border); position: relative; cursor: pointer; flex-shrink: 0; border: none; padding: 0; }
+.toggle .thumb,
+.toggle::after { content: ""; position: absolute; top: 2px; left: 2px; width: 15px; height: 15px; border-radius: 50%; background: #fff; transition: left .12s ease; }
+.toggle.on { background: var(--accent); }
+.toggle.on .thumb,
+.toggle.on::after { left: 17px; }
+.select { display: flex; align-items: center; gap: 6px; height: 26px; padding: 0 8px; border: 1px solid var(--border); border-radius: 3px; font-size: 12px; color: var(--text); cursor: pointer; background: var(--bg); }
+.select svg { color: var(--text-muted); flex-shrink: 0; display: block; }
+.pathval { font-size: 11.5px; color: var(--text-muted); max-width: 190px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border: none; background: none; text-align: right; }
+.smallinput { height: 26px; width: 80px; padding: 0 8px; border: 1px solid var(--border); border-radius: 3px; font-size: 12px; color: var(--text); background: var(--bg); text-align: right; font-family: inherit; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); flex-shrink: 0; }
+.dot.off { background: var(--text-muted); }
+.plist,
+.profilelist { margin-top: 2px; }
+.prow { display: flex; align-items: center; justify-content: space-between; padding: 7px 0; border-top: 1px solid var(--border); }
+.prow .pname { font-size: 12px; color: var(--text); }
+.prow .pdate { font-size: 11px; color: var(--text-muted); margin-left: 6px; }
+.prow .unpair { font-size: 11.5px; color: var(--text-muted); cursor: pointer; visibility: hidden; }
+.prow:hover .unpair { visibility: visible; color: var(--danger); }
 
-button {
-  font-family: var(--font-ui);
-  font-size: 13px;
-  padding: 7px 12px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--surface);
-  color: var(--ink);
-  cursor: pointer;
-}
+/* Browser-setup body */
+.intro { font-size: 12.5px; color: var(--text-muted); margin-bottom: 18px; line-height: 1.5; max-width: 420px; }
+.step { display: flex; gap: 12px; padding: 14px 0; border-top: 1px solid var(--border); }
+.step:first-child { border-top: none; }
+.num,
+.stepnum { width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--border); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+.stepbody .t,
+.stitle { font-size: 12.5px; color: var(--text); margin-bottom: 3px; }
+.stepbody .d,
+.shint { font-size: 11.5px; color: var(--text-muted); line-height: 1.5; }
+.pathbit { font-family: ui-monospace, "Cascadia Code", "Consolas", monospace; font-size: 11px; background: var(--chrome); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
 
-button:hover {
-  background: var(--bg);
-}
+/* Shared neutral status-text idiom, used by #ytdlp-update-status/#setup-page-status/#allow-pairing-status */
+.ssub.error { color: var(--danger); }
 
-button:disabled {
-  opacity: 0.5;
-  cursor: default;
-}
-
-/* Add Download / Settings are popups (modal overlays), not inline sections
-   that push the queue list down -- `.panel` is the fixed, dimmed backdrop;
-   `.panel-card` (below) is the actual floating card inside it. */
-.panel {
-  position: fixed;
-  inset: 0;
-  z-index: 50;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  background: rgba(16, 20, 26, 0.35);
-}
-
-.panel.hidden {
-  display: none;
-}
-
-.panel-card {
-  width: 100%;
-  max-width: 420px;
-  max-height: 100%;
-  display: flex;
-  flex-direction: column;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  box-shadow:
-    0 1px 2px rgba(16, 24, 40, 0.04),
-    0 8px 24px rgba(16, 24, 40, 0.12);
-  overflow: hidden;
-}
-
-/* Mini title bar inside the popup card (its own "Add download"/"Settings" +
-   close button). */
-.popup-titlebar {
-  background: var(--surface);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 14px;
-  border-bottom: 1px solid var(--border);
-  flex: 0 0 auto;
-}
-
-.panel-card-body {
-  flex: 1;
-  min-height: 0;
-  overflow: auto;
-  padding: 16px;
-}
-
-.panel label {
-  display: block;
-  font-size: 0.85rem;
-  color: var(--ink-dim);
-  margin-bottom: 0.75rem;
-}
-
-.panel input {
-  display: block;
-  width: 100%;
-  margin-top: 0.25rem;
-  padding: 0.5rem;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--surface);
-  color: var(--ink);
-  font-size: 0.9rem;
-}
-
-.panel-actions {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.error {
-  font-size: 0.85rem;
-  color: var(--danger);
-}
-
-.error.hidden,
-.hidden {
-  display: none;
-}
-
-/* `flex:1` so `.empty` (above) can actually center itself vertically within
-   all the space `.content` has available, not just within its own content
-   height -- `.content` is the flex column that makes this `flex:1` mean
-   something (see its own rule). */
-#queue {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-height: 200px;
-}
-
-/* Queue row (spec Appendix A `.row`) -- `position:relative` so its own
-   `.popover` (position:absolute) anchors under this row's trigger button
-   instead of the page. */
-.row {
-  position: relative;
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 12px 10px;
-  border-bottom: 1px solid var(--border);
-  transition: background 0.15s ease;
-}
-/* Marks the row the open context menu belongs to -- stays highlighted
-   for as long as the menu is open (same convention as Free Download
-   Manager/IDM's own row context menu), not a brief flash. `app.js` adds
-   this when the menu opens and removes it when the menu closes, for
-   whichever reason (an item clicked, clicked outside, Escape, or another
-   row's own right-click taking over). */
-.row.selected {
-  background: var(--accent-dim);
-}
-/* Lighter than `.selected` above, on purpose -- hovering and having a
-   menu open stay visibly distinct, even once the cursor has moved off the
-   row and onto the menu itself. */
-.row:hover {
-  background: var(--surface-sunken);
-}
-.row:last-child {
-  border-bottom: none;
-}
-
-.slot {
-  width: 34px;
-  height: 34px;
-  flex-shrink: 0;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  color: var(--ink-dim);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.slot .sprite {
-  display: block;
-}
-
-.info {
-  flex: 1;
-  min-width: 0;
-}
-
-.fname {
-  font-size: 13.5px;
-  font-weight: 500;
-  line-height: 1.3;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.meta {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  color: var(--ink-dim);
-  margin-top: 3px;
-}
-.meta .sword {
-  font-family: var(--font-ui);
-  font-size: 12px;
-  font-weight: 500;
-}
-/* `.mrest`'s own text (set in `updateDownloadRow`/`updateExtractRow`)
-   already starts with a leading space before its em dash, matching spec
-   Appendix A's literal markup (a bare text node after `.sword`, not a
-   margin) -- no extra CSS gap needed here. */
-
-/* Right-click/double-click discoverability hint (app.js's `els.hint`):
-   empty text when there's nothing to hint at (anything but a Completed
-   row with a real file), and even with text, invisible until the row is
-   hovered or has its context menu open. `opacity`, not `display`, so it
-   never shifts the row's height when it appears. */
-.hint {
-  font-size: 11.5px;
-  color: var(--ink-dim);
-  margin-top: 3px;
-  opacity: 0;
-  transition: opacity 0.12s ease;
-}
-.row:hover .hint,
-.row.selected .hint {
-  opacity: 1;
-}
-
-.stambar-outer {
-  margin-top: 7px;
-  height: 4px;
-  width: 100%;
-  max-width: 220px;
-  background: var(--border);
-  border: none;
-  border-radius: 2px;
-  padding: 0;
-  overflow: hidden;
-}
-.stambar-fill {
-  height: 100%;
-  background: var(--accent);
-  border-radius: 2px;
-  transition: width 0.4s ease;
-}
-.stambar-outer.indeterminate .stambar-fill {
-  width: 100% !important;
-  opacity: 0.3;
-}
-/* `.hidden`'s `display:none` is declared earlier in this file but wins on
-   source order alone since `.stambar-outer` itself never sets `display`. */
-
-.actions {
-  display: flex;
-  gap: 4px;
-  flex-shrink: 0;
-  padding-top: 1px;
-}
-.actbtn {
-  min-width: 26px;
-  height: 26px;
-  padding: 0 10px;
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 5px;
-  font-family: var(--font-ui);
-  font-size: 12px;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  color: var(--ink-dim);
-  transition:
-    background 0.1s ease,
-    border-color 0.1s ease,
-    color 0.1s ease;
-}
-.actbtn:hover {
-  background: var(--bg);
-  border-color: var(--border);
-  color: var(--ink);
-}
-.actbtn.danger {
-  color: var(--danger);
-}
-.actbtn.danger:hover {
-  background: #fbe8e6;
-  border-color: #f2c6c0;
-}
-.actbtn.active {
-  background: var(--accent-dim);
-  border-color: var(--accent-dim);
-  color: var(--accent);
-}
-
-/* Speed-limit / choose-a-quality popovers (spec Appendix D). Closed by
-   default via the bare `.hidden` utility above -- `.popover` itself never
-   sets `display`, so no higher-specificity override is needed to make that
-   toggle take effect. */
-.popover {
-  position: absolute;
-  top: 100%;
-  right: 10px;
-  margin-top: 6px;
-  z-index: 20;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  box-shadow:
-    0 1px 2px rgba(16, 24, 40, 0.04),
-    0 8px 20px rgba(16, 24, 40, 0.1);
-  padding: 8px;
-  min-width: 190px;
-}
-.popover .ptitle {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--ink-dim);
-  padding: 2px 4px 8px;
-}
-.popover .prow {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 0 2px 2px;
-}
-/* REQUIRED: without min-width:0 the input's default intrinsic width
-   overflows the popover and visually pushes the Set button out past
-   the border -- this exact bug was already hit once during the mockup's
-   design phase (spec Appendix D / Global Constraints). */
-.popover input {
-  flex: 1;
-  min-width: 0;
-  font-family: var(--font-mono);
-  font-size: 12.5px;
-  color: var(--ink);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 5px;
-  padding: 6px 8px;
-}
-.popover .prow .actbtn {
-  flex-shrink: 0;
-  color: #fff;
-  background: var(--accent);
-  border-color: var(--accent);
-}
-.popover .prow .actbtn:hover {
-  background: #2a5fd0;
-  border-color: #2a5fd0;
-  color: #fff;
-}
-.popover .pick {
-  display: block;
-  width: 100%;
-  text-align: left;
-  font-family: var(--font-mono);
-  font-size: 12.5px;
-  color: var(--ink);
-  padding: 8px 10px;
-  border: none;
-  border-radius: 5px;
-  background: transparent;
-  cursor: pointer;
-  transition: background 0.1s ease;
-}
-.popover .pick:hover {
-  background: var(--bg);
-}
-.popover .pick.danger {
-  color: var(--danger);
-}
-.popover .pick.danger:hover {
-  background: #fbe8e6;
-}
-.popover .pickdiv {
-  height: 1px;
-  background: var(--border);
-  margin: 4px 2px;
-}
-
-/* Right-click context menu: one shared element appended to <body>
-   (app.js's `contextMenuEl`), repositioned at the click point and
-   repopulated per row on `contextmenu`/`dblclick` -- see
-   `contextMenuItemsFor`/`openContextMenu` in app.js. Reuses `.popover`'s
-   look exactly (and its `.pick`/`.pickdiv` children above), just
-   fixed-positioned by cursor coordinates instead of anchored under a
-   trigger button inside a `.row`. The `.popover` selector alone would tie
-   on specificity with the plain `.popover` rule above and lose on source
-   order, so this is written as the compound `.popover.ctxmenu` to win
-   outright regardless of order. */
-.popover.ctxmenu {
-  position: fixed;
-  top: 0;
-  right: auto;
-  margin-top: 0;
-  min-width: 210px;
-  z-index: 100;
-}
-
-/* Add Download popup content (spec Appendix C). */
-#add-panel .error {
-  color: var(--danger);
-}
-.hero {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 4px 2px 16px;
-}
-.heroslot {
-  width: 42px;
-  height: 42px;
-  flex-shrink: 0;
-  color: var(--accent);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.herotext {
-  font-size: 12.5px;
-  color: var(--ink-dim);
-  line-height: 1.5;
-}
-.field {
-  margin-bottom: 14px;
-}
-.field label {
-  display: block;
-  font-size: 11.5px;
-  font-weight: 500;
-  color: var(--ink-dim);
-  margin-bottom: 6px;
-}
-.field input {
-  width: 100%;
-  margin: 0;
-  border-radius: 6px;
-  font-family: var(--font-mono);
-  font-size: 13px;
-  color: var(--ink);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  padding: 9px 10px;
-  transition: border-color 0.1s ease;
-}
-.field input::placeholder {
-  color: #9aa1ab;
-}
-.field input:focus {
-  outline: none;
-  border-color: var(--accent);
-}
-#add-panel .panel-actions {
-  gap: 8px;
-  padding: 6px 0 2px;
-}
-.btn {
-  flex: 1;
-  margin: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 36px;
-  padding: 0 12px;
-  font-family: var(--font-ui);
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  text-align: center;
-  transition: background 0.1s ease;
-}
-.btn:hover {
-  background: var(--bg);
-}
-.btn.primary {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
-}
-.btn.primary:hover {
-  background: #2a5fd0;
-  border-color: #2a5fd0;
-}
-.btn.secondary {
-  background: var(--surface);
-  color: var(--ink);
-}
-
-/* Settings popup content (spec Appendix C), minus the three unbacked toggle
-   rows (Download chime / Auto-retry failed downloads / Start at login --
-   none has a real field in the backend's `SettingsDto`, see
-   src-tauri/src/settings.rs). Reuses `.btn`/`.btn.primary`/`.btn.secondary`/
-   `.panel-actions` from the Add Download popup above for Save/Cancel. */
-#settings-panel .error {
-  color: var(--danger);
-}
-#settings-panel .panel-actions {
-  gap: 8px;
-  padding: 6px 0 2px;
-}
-/* Wider than Add Download's 420px -- matches the mockup's own Settings
-   card width (spec Appendix C), which is wider than Add Download's. */
-#settings-panel .panel-card {
-  max-width: 460px;
-}
-
-/* Browser Companion Setup Guide popup content (spec Appendix C). */
-#browser-setup-panel .panel-card {
-  max-width: 440px;
-}
-#browser-setup-panel .error {
-  color: var(--danger);
-}
-.intro {
-  font-size: 13px;
-  color: var(--ink-dim);
-  line-height: 1.6;
-  margin-bottom: 4px;
-}
-.intro b {
-  color: var(--ink);
-}
-
-.step {
-  display: flex;
-  gap: 12px;
-  padding: 13px 2px;
-  border-bottom: 1px solid var(--border);
-}
-.step:last-of-type {
-  border-bottom: none;
-}
-.stepnum {
-  width: 20px;
-  height: 20px;
-  flex-shrink: 0;
-  background: var(--bg);
-  color: var(--ink-dim);
-  border: none;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
-  font-weight: 600;
-  margin-top: 1px;
-}
-.steptext {
-  flex: 1;
-  padding-top: 1px;
-}
-.stitle {
-  font-size: 13.5px;
-  color: var(--ink);
-}
-.shint {
-  font-family: var(--font-mono);
-  font-size: 11.5px;
-  color: var(--ink-dim);
-  margin-top: 3px;
-}
-.stepbtn {
-  display: inline-flex;
-  margin-top: 8px;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--ink);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 7px 10px;
-  cursor: pointer;
-  transition: background 0.1s ease;
-}
-.stepbtn:hover {
-  background: var(--bg);
-}
-
-.tip {
-  display: flex;
-  gap: 9px;
-  align-items: flex-start;
-  margin: 2px 2px 16px;
-  padding: 10px 11px;
-  background: var(--bg);
-  border-radius: 6px;
-}
-.tip .glyph {
-  font-size: 14px;
-  line-height: 1;
-}
-.tip .ttext {
-  font-size: 12.5px;
-  color: var(--ink-dim);
-  line-height: 1.5;
-}
-
-#browser-setup-panel .panel-actions {
-  gap: 8px;
-  padding: 2px 0 2px;
-}
-
-/* Visual-only toggle switches (Download chime / Auto-retry failed downloads
-   / Start at login) -- see the comment above these rows in index.html for
-   why they don't read from or write to real settings. */
-.switch {
-  width: 36px;
-  height: 20px;
-  padding: 0;
-  margin: 0;
-  flex-shrink: 0;
-  border: none;
-  border-radius: 10px;
-  background: var(--border);
-  position: relative;
-  cursor: pointer;
-  transition: background 0.15s ease;
-}
-.switch .thumb {
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.2);
-  transition: left 0.15s ease;
-}
-.switch.on {
-  background: var(--accent);
-}
-.switch.on .thumb {
-  left: 18px;
-}
-
-.srow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  padding: 14px 2px;
-  border-bottom: 1px solid var(--border);
-}
-/* Neither the spec's literal `:last-child` nor `:last-of-type` works here:
-   in this file's actual markup the last `.srow` isn't the form's last
-   child element (the error paragraph/`.about` footer/`.panel-actions`
-   follow it), so `:last-child` never matches; and `:last-of-type` matches
-   by tag name, not class. `.srow-last` is an explicit class on the actual
-   last `.srow` (set in index.html) so this rule targets exactly the row it
-   means to, regardless of what follows it in the markup. */
-.srow-last {
-  border-bottom: none;
-}
-.slabel {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--ink);
-}
-.ssub {
-  font-family: var(--font-mono);
-  font-size: 11.5px;
-  color: var(--ink-dim);
-  margin-top: 2px;
-}
-/* Higher specificity than the bare `.ssub`/`.error` rules above (two
-   classes vs. one) so the yt-dlp update status line -- which toggles a
-   plain `.error` class via JS (see app.js) while living inside a `.ssub`
-   -- reliably turns red instead of staying dim regardless of the two
-   single-class rules' own source order. */
-.ssub.error {
-  color: var(--danger);
-}
-
-/* "Paired browsers" row -- unlike every other `.srow` here, this one has
-   no right-hand control, just a full-width column (the row list below the
-   label), so it skips the usual label+control flex pairing entirely. */
-.profiles-srow {
-  align-items: flex-start;
-}
-.profiles-col {
-  width: 100%;
-}
-.profilelist {
-  margin-top: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.profilerow {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.profilelabel {
-  flex: 1;
-  min-width: 0;
-  margin: 0;
-  border-radius: 5px;
-  font-size: 12.5px;
-  color: var(--ink);
-  background: transparent;
-  border: 1px solid transparent;
-  padding: 4px 6px;
-}
-.profilelabel:hover {
-  border-color: var(--border);
-}
-.profilelabel:focus {
-  outline: none;
-  border-color: var(--accent);
-  background: var(--surface);
-}
-.profiledate {
-  flex-shrink: 0;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--ink-dim);
-  white-space: nowrap;
-}
-
-.pathbox {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-}
-/* `#settings-panel .smallinput`, not the spec's bare `.smallinput` --
-   the generic `.panel input` rule above (element+class, specificity
-   (0,1,1)) would otherwise beat a bare single-class `.smallinput`
-   ((0,1,0)) regardless of source order. Scoping by id ((1,1,0)) beats it
-   outright. */
-#settings-panel .smallinput {
-  width: 120px;
-  margin: 0;
-  border-radius: 6px;
-  font-family: var(--font-mono);
-  font-size: 12.5px;
-  color: var(--ink);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  padding: 6px 8px;
-}
-#settings-panel .smallinput:focus {
-  outline: none;
-  border-color: var(--accent);
-}
-/* Wider than the spec's base `.smallinput` (120px), which was sized for
-   the speed-limit field -- a real download-folder path needs more room. */
-#settings-panel .pathinput {
-  width: 200px;
-}
-/* Narrower than the base `.smallinput`, centered -- this is a small
-   integer count (max concurrent downloads), not free text. */
-#settings-panel .numinput {
-  width: 56px;
-  text-align: center;
-}
-
-.changebtn {
-  flex-shrink: 0;
-  font-size: 12px;
-  font-weight: 500;
-  background: var(--surface);
-  color: var(--ink);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 7px 11px;
-  cursor: pointer;
-  transition: background 0.1s ease;
-}
-.changebtn:hover {
-  background: var(--bg);
-}
-.changebtn.danger {
-  color: var(--danger);
-}
-.changebtn.danger:hover {
-  background: #fbe8e6;
-  border-color: #f2c6c0;
-}
-
-.about {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 16px 2px 2px;
-}
-.aboutslot {
-  width: 30px;
-  height: 30px;
-  flex-shrink: 0;
-  color: var(--accent);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.aboutver {
-  font-family: var(--font-mono);
-  font-size: 11.5px;
-  color: var(--ink-dim);
-}
+/* Shared error/hidden utilities */
+.hidden { display: none; }
+.error { color: var(--danger); font-size: 11.5px; }
+.error.hidden { display: none; }
