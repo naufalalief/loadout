@@ -56,12 +56,12 @@ html, body { margin: 0; font-family: var(--font-ui); height: 100%; }
 .trow .c-status.choose svg { transition: transform .12s ease; }
 .trow.open .c-status.choose svg { transform: rotate(180deg); }
 .trow .acts { display: none; gap: 10px; width: 84px; flex-shrink: 0; justify-content: flex-end; font-size: 12px; }
-.trow .acts span { cursor: pointer; color: var(--text-muted); }
-.trow .acts span:hover { color: var(--text); }
-.trow .acts span.primary { color: var(--accent); }
-.trow .acts span.danger:hover { color: var(--danger); }
-.trow:hover .c-status { display: none; }
-.trow:hover .acts { display: flex; }
+.trow .acts button { all: unset; cursor: pointer; color: var(--text-muted); }
+.trow .acts button:hover { color: var(--text); }
+.trow .acts button.primary { color: var(--accent); }
+.trow .acts button.danger:hover { color: var(--danger); }
+.trow:hover .c-status, .trow:focus-within .c-status { display: none; }
+.trow:hover .acts, .trow:focus-within .acts { display: flex; }
 .trow.open { background: var(--zebra); }
 
 /* Status bar */
@@ -93,7 +93,7 @@ html, body { margin: 0; font-family: var(--font-ui); height: 100%; }
 .unfold .uf-title { font-size: 11px; font-weight: 600; color: var(--text-muted); padding: 8px 8px 6px; }
 .unfold .uf-error { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--danger); padding: 8px 8px 4px; }
 .unfold .uf-error svg { flex-shrink: 0; display: block; }
-.unfold .uf-opt { display: flex; align-items: center; gap: 8px; padding: 7px 8px; border-radius: 3px; font-size: 12.5px; color: var(--text); cursor: pointer; }
+.unfold .uf-opt { all: unset; box-sizing: border-box; width: 100%; display: flex; align-items: center; gap: 8px; padding: 7px 8px; border-radius: 3px; font-size: 12.5px; color: var(--text); cursor: pointer; }
 .unfold .uf-opt:hover { background: rgba(0, 103, 192, 0.08); }
 .unfold .uf-opt.danger:hover { background: rgba(196, 43, 28, 0.08); color: var(--danger); }
 .unfold .uf-opt svg { flex-shrink: 0; display: block; color: var(--text-muted); }
@@ -110,7 +110,7 @@ html, body { margin: 0; font-family: var(--font-ui); height: 100%; }
 
 /* Settings + Browser-setup shared chrome */
 .header { height: 34px; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; padding: 0 12px; background: var(--chrome); border-bottom: 1px solid var(--border); font-size: 12.5px; font-weight: 600; }
-.header .close { font-size: 12px; font-weight: 400; color: var(--accent); cursor: pointer; }
+.header .close { all: unset; font-size: 12px; font-weight: 400; color: var(--accent); cursor: pointer; }
 .header .close:hover { text-decoration: underline; }
 .body { flex: 1; overflow: auto; padding: 14px 18px 6px; }
 .footer { height: 36px; flex-shrink: 0; display: flex; align-items: center; padding: 0 16px; border-top: 1px solid var(--border); font-size: 11px; color: var(--text-muted); }
@@ -120,7 +120,7 @@ html, body { margin: 0; font-family: var(--font-ui); height: 100%; }
 .btn:hover { background: var(--chrome); }
 .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
 .btn.primary:hover { filter: brightness(0.95); }
-.link { font-size: 12px; color: var(--accent); cursor: pointer; }
+.link { all: unset; font-size: 12px; color: var(--accent); cursor: pointer; }
 .link:hover { text-decoration: underline; }
 
 /* Settings body */
@@ -151,8 +151,8 @@ html, body { margin: 0; font-family: var(--font-ui); height: 100%; }
 .prow { display: flex; align-items: center; justify-content: space-between; padding: 7px 0; border-top: 1px solid var(--border); }
 .prow .pname { font-size: 12px; color: var(--text); }
 .prow .pdate { font-size: 11px; color: var(--text-muted); margin-left: 6px; }
-.prow .unpair { font-size: 11.5px; color: var(--text-muted); cursor: pointer; visibility: hidden; }
-.prow:hover .unpair { visibility: visible; color: var(--danger); }
+.prow .unpair { all: unset; font-size: 11.5px; color: var(--text-muted); cursor: pointer; visibility: hidden; }
+.prow:hover .unpair, .prow:focus-within .unpair { visibility: visible; color: var(--danger); }
 
 /* Browser-setup body */
 .intro { font-size: 12.5px; color: var(--text-muted); margin-bottom: 18px; line-height: 1.5; max-width: 420px; }
