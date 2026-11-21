@@ -50,6 +50,7 @@ fn loading_existing_state_resets_downloading_to_queued() {
         downloaded_bytes: 500,
         status: DownloadStatus::Downloading,
         error: None,
+        created_at: 1_700_000_000,
     }];
 
     std::fs::write(&state_file, serde_json::to_string(&pre_existing).unwrap()).unwrap();
@@ -62,6 +63,23 @@ fn loading_existing_state_resets_downloading_to_queued() {
     assert_eq!(listed[0].status, DownloadStatus::Queued);
 
     std::fs::remove_dir_all(dir).ok();
+}
+
+#[test]
+fn loading_legacy_state_without_created_at_defaults_to_zero() {
+    let dir = tempfile_dir();
+    let state_file = dir.join("state.json");
+    // Hand-written legacy JSON: exactly what a pre-created_at build persisted.
+    std::fs::write(
+        &state_file,
+        r#"[{"id":"abc123","url":"https://example.invalid/file.bin","filename":"file.bin","dest_path":"file.bin","total_bytes":1000,"downloaded_bytes":500,"status":"Paused","error":null}]"#,
+    )
+    .unwrap();
+
+    let manager = QueueManager::new(dir.clone(), state_file.clone(), 2);
+    let loaded = manager.list();
+    assert_eq!(loaded.len(), 1);
+    assert_eq!(loaded[0].created_at, 0);
 }
 
 #[tokio::test]

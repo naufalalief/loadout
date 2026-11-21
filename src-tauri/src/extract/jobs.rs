@@ -15,6 +15,7 @@ use tokio::process::{Child, Command};
 use uuid::Uuid;
 
 use super::binaries::BinaryManager;
+use crate::download::queue::now_unix;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ExtractStatus {
@@ -47,6 +48,8 @@ pub struct ExtractJobInfo {
     /// file"/"Open file location" context-menu actions and double-click-
     /// to-open, which only ever show for a `Completed` row.
     pub final_path: Option<String>,
+    /// Unix seconds when this job was created (probe started).
+    pub created_at: i64,
 }
 
 /// In-memory-only side channel holding exactly what's needed to (re-)run a
@@ -226,6 +229,7 @@ impl ExtractJobManager {
                 total_bytes: None,
                 error: None,
                 final_path: None,
+                created_at: now_unix(),
             },
         );
         self.inner.cache.lock().unwrap().insert(
