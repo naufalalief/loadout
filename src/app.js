@@ -1,9 +1,10 @@
-// Frontend for the download queue: polls `list_downloads` and renders rows,
-// plus the Add Download and Settings forms. Plain JS, no framework, no
-// build step -- `window.__TAURI__` is exposed because `withGlobalTauri` is
-// enabled in `tauri.conf.json`.
+// Frontend for the download queue: polls `list_downloads`/`list_extract_jobs`
+// and renders them as table rows, plus the always-visible add-link bar and
+// the Settings / Browser setup pages. Plain JS, no framework, no build step
+// -- `window.__TAURI__` is exposed because `withGlobalTauri` is enabled in
+// `tauri.conf.json`.
 
-import { appIcon, settingsIcon, discIcon, zipIcon, pdfIcon, audioIcon, imgIcon, docIcon, exeIcon, filmIcon } from "./icons.js";
+import { appIcon, settingsIcon } from "./icons.js";
 
 const { invoke } = window.__TAURI__.core;
 
@@ -12,23 +13,17 @@ const POLL_INTERVAL_MS = 1000;
 const queueListEl = document.getElementById("queue-list");
 const emptyStateEl = document.getElementById("empty-state");
 
-const addrowBtn = document.getElementById("addrow-btn");
-const emptyAddBtn = document.getElementById("empty-add-btn");
 const shedBtn = document.getElementById("shedbtn");
 const shedIconEl = document.getElementById("shedbtn-icon");
-const emptyPotIconEl = document.getElementById("empty-pot-icon");
-const addSeedIconEl = document.getElementById("add-seed-icon");
+const addbarIconEl = document.getElementById("addbar-icon");
+const emptyStateIconEl = document.getElementById("empty-state-icon");
 const statusTasksEl = document.getElementById("status-tasks");
 const statusWorkingEl = document.getElementById("status-working");
 
-const addPanelEl = document.getElementById("add-panel");
 const addFormEl = document.getElementById("add-form");
 const addUrlEl = document.getElementById("add-url");
-const addFilenameEl = document.getElementById("add-filename");
 const addErrorEl = document.getElementById("add-error");
 
-const settingsPanelEl = document.getElementById("settings-panel");
-const settingsFormEl = document.getElementById("settings-form");
 const settingsDownloadDirEl = document.getElementById("settings-download-dir");
 const settingsBrowseDownloadDirEl = document.getElementById("settings-browse-download-dir");
 const settingsMaxConcurrentEl = document.getElementById("settings-max-concurrent");
@@ -39,26 +34,39 @@ const settingStartWithSeasonEl = document.getElementById("setting-start-with-sea
 const settingsErrorEl = document.getElementById("settings-error");
 const checkYtdlpUpdateBtn = document.getElementById("check-ytdlp-update-btn");
 const ytdlpUpdateStatusEl = document.getElementById("ytdlp-update-status");
-const settingsAboutIconEl = document.getElementById("settings-about-icon");
 const allowNewPairingBtn = document.getElementById("allow-new-pairing-btn");
 const allowPairingStatusEl = document.getElementById("allow-pairing-status");
 const pairedProfilesListEl = document.getElementById("paired-profiles-list");
 const pairedProfilesEmptyEl = document.getElementById("paired-profiles-empty");
+const pairedProfilesDotEl = document.getElementById("paired-profiles-dot");
+const pairedProfilesCountEl = document.getElementById("paired-profiles-count");
 
 const browserSetupBtn = document.getElementById("browser-setup-btn");
-const browserSetupPanelEl = document.getElementById("browser-setup-panel");
 const browserSetupErrorEl = document.getElementById("browser-setup-error");
 const setupOpenPageBtn = document.getElementById("setup-open-page-btn");
 const setupPageStatusEl = document.getElementById("setup-page-status");
 const setupOpenFolderBtn = document.getElementById("setup-open-folder-btn");
 
-// Clears `svgEl` and repopulates it with one 1x1 <rect> per cell, in the
-// pixel-icon grid coordinate system `icons.js`'s `buildIcon` produces.
-// Icons are plain stroke-based SVG markup now (icons.js exports each
-// icon's inner <svg> markup as a string) -- the icon's color comes from
-// the target element's own CSS `color` (every icon path/shape below uses
-// `stroke="currentColor"`), not a per-cell fill.
+// The three full-window pages. Exactly one is visible at a time; the
+// statusbar sits outside all three and is always shown.
+const ledgerPageEl = document.getElementById("ledger-page");
+const settingsPageEl = document.getElementById("settings-page");
+const browserSetupPageEl = document.getElementById("browser-setup-page");
+const PAGES = [ledgerPageEl, settingsPageEl, browserSetupPageEl];
+function showPage(page) {
+  for (const p of PAGES) p.classList.toggle("hidden", p !== page);
+}
+
+// Icons are plain stroke-based SVG markup (icons.js exports each icon's
+// inner <svg> markup as a string). The stroke presentation attributes are
+// set here on the target <svg> itself -- no stylesheet rule supplies them --
+// so the icon's color comes from the element's own CSS `color`.
 function renderIconInto(svgEl, markup) {
+  svgEl.setAttribute("fill", "none");
+  svgEl.setAttribute("stroke", "currentColor");
+  svgEl.setAttribute("stroke-width", "1.6");
+  svgEl.setAttribute("stroke-linecap", "round");
+  svgEl.setAttribute("stroke-linejoin", "round");
   svgEl.innerHTML = markup;
 }
 
@@ -86,8 +94,7 @@ function progressPercent(download) {
  * delta between this call and the last one for this same row. Neither
  * Tauri command's response carries a speed number -- `downloaded_bytes`
  * is the only thing either side tracks -- so this is the only source for
- * the "-- 4.2 MB/s" segment the spec's mockup calls for (see the main
- * window design doc, Appendix: queue row meta line).
+ * the statusbar's combined speed and the progress cell's tooltip.
  *
  * `els` is the row's persistent per-id cache (`rowsById`), so the
  * previous sample survives across polls. Returns `null` when `active` is
@@ -121,10 +128,9 @@ function liveSpeedBytesPerSec(els, downloadedBytes, active) {
 }
 
 /**
- * The row meta line's size segment: `<downloaded> of <total>` (or just
- * `<downloaded>` when the total isn't known yet), plus a ` -- <speed>/s`
- * suffix whenever a live speed is available. Matches the design spec's
- * mockup text exactly (e.g. "812 MB of 1.3 GB -- 4.2 MB/s").
+ * `<downloaded> of <total>` (or just `<downloaded>` when the total isn't
+ * known yet), plus a ` -- <speed>/s` suffix whenever a live speed is
+ * available. Shown as the progress cell's hover tooltip.
  */
 function sizeAndSpeedText(downloadedBytes, totalBytes, speedBytesPerSec) {
   const sizeText =
@@ -132,6 +138,54 @@ function sizeAndSpeedText(downloadedBytes, totalBytes, speedBytesPerSec) {
       ? `${formatBytes(downloadedBytes)} of ${formatBytes(totalBytes)}`
       : formatBytes(downloadedBytes);
   return speedBytesPerSec != null ? `${sizeText} — ${formatBytes(speedBytesPerSec)}/s` : sizeText;
+}
+
+// The table's Size column: the total once it's known, else whatever has
+// been downloaded so far, else a dash (nothing known yet -- a pending row).
+function sizeCellText(item) {
+  if (item.total_bytes != null) return formatBytes(item.total_bytes);
+  if (item.downloaded_bytes) return formatBytes(item.downloaded_bytes);
+  return "—";
+}
+
+// The table's Added column. `created_at` is Unix seconds; a missing/0 value
+// (entries saved before `created_at` existed) shows a dash.
+function formatDateAdded(createdAtUnixSeconds) {
+  if (!createdAtUnixSeconds) return "—";
+  const date = new Date(createdAtUnixSeconds * 1000);
+  const now = new Date();
+  if (date.toDateString() === now.toDateString()) return "Today";
+  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+// Leading icon for the Status cell -- only these three statuses get one.
+function statusIconMarkup(stateClass, status) {
+  if (status === "Completed") return '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>';
+  if (status === "Failed") return '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>';
+  if (status === "Paused") return '<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><rect x="7" y="5" width="3" height="14" rx="0.5"/><rect x="14" y="5" width="3" height="14" rx="0.5"/></svg>';
+  return "";
+}
+
+// Trailing chevron on an AwaitingFormatChoice row's clickable Status cell
+// (rotated by CSS while that row's unfold is open).
+const CHOOSE_CHEVRON_MARKUP =
+  '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
+
+// Small stroke icons for the unfold's `.uf-opt` entries.
+const UF_ICONS = {
+  open: '<path d="M14 3h7v7"/><path d="M10 14L21 3"/><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"/>',
+  folder: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+  link: '<path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/>',
+  pause: '<path d="M9 5v14M15 5v14"/>',
+  resume: '<path d="M7 4l12 8-12 8z"/>',
+  retry: '<path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/>',
+  cancel: '<path d="M6 6l12 12M18 6L6 18"/>',
+  remove: '<path d="M4 7h16"/><path d="M10 11v6M14 11v6"/><path d="M6 7l1 13h10l1-13"/><path d="M9 7V4h6v3"/>',
+  speed: '<path d="M12 14l4-4"/><path d="M4 18a9 9 0 1 1 16 0"/>',
+};
+
+function ufIconMarkup(name) {
+  return `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${UF_ICONS[name] ?? ""}</svg>`;
 }
 
 // Extract-job statuses that keep a live subprocess around and so can be
@@ -144,9 +198,7 @@ const EXTRACT_TERMINAL_STATUSES = ["Completed", "Failed", "Canceled"];
 
 // Statuses (shared by downloads and extract jobs -- the strings happen to
 // match exactly) that mean no further transfer will ever happen for this
-// row, so the progress bar has nothing left to show. The mockup never
-// shows a bar on a Completed/Failed/Canceled row; the live app kept
-// showing one at whatever fill level the transfer last reached.
+// row.
 const TERMINAL_STATUSES = ["Completed", "Failed", "Canceled"];
 
 // Parses a speed-limit input's value into what the backend expects:
@@ -168,146 +220,85 @@ function parseSpeedLimit(raw) {
   return value;
 }
 
-// Status -> [badge word, color token] mapping (spec Appendix A Constraints
-// tables) -- the single meta line's `<span class="sword">` text/color comes
-// from here, replacing today's raw `${status}` interpolation. Exact words
-// and tokens, not open to rephrasing.
+// Status -> Status-cell word. Exact words, not open to rephrasing. (Colors
+// now come from the CSS -- `.c-status`, `.c-status.failed`,
+// `.c-status.choose` -- not from these tables.)
 const DOWNLOAD_BADGE = {
-  Downloading: ["Downloading", "var(--accent)"],
-  Paused: ["Paused", "var(--ink-dim)"],
-  Queued: ["Queued", "var(--ink-dim)"],
-  Completed: ["Completed", "var(--success)"],
-  Failed: ["Failed", "var(--danger)"],
-  Canceled: ["Canceled", "var(--ink-dim)"],
+  Downloading: "Downloading",
+  Paused: "Paused",
+  Queued: "Queued",
+  Completed: "Completed",
+  Failed: "Failed",
+  Canceled: "Canceled",
 };
 const EXTRACT_BADGE = {
-  Probing: ["Fetching info", "var(--ink-dim)"],
-  Downloading: ["Downloading", "var(--accent)"],
-  AwaitingFormatChoice: ["Choose a quality", "var(--warn)"],
-  Completed: ["Completed", "var(--success)"],
-  Failed: ["Failed", "var(--danger)"],
-  Canceled: ["Canceled", "var(--ink-dim)"],
+  Probing: "Fetching info",
+  Downloading: "Downloading",
+  AwaitingFormatChoice: "Choose a quality",
+  Completed: "Completed",
+  Failed: "Failed",
+  Canceled: "Canceled",
 };
 
-// Picks a row's per-file-type `.slot` icon markup from its filename's
-// extension (case-insensitive). Extensions not in the table -- including
-// no extension at all -- fall back to the film icon. Every extract-job row
-// always shows the film icon regardless of its eventual filename (see
-// `updateExtractRow`, which uses `filmIcon` directly instead of this).
-function iconMarkupForFilename(filename) {
-  const lower = String(filename ?? "").toLowerCase();
-  const byExt = {
-    iso: discIcon,
-    zip: zipIcon, rar: zipIcon, "7z": zipIcon, tar: zipIcon, gz: zipIcon,
-    pdf: pdfIcon,
-    mp3: audioIcon, wav: audioIcon, flac: audioIcon, ogg: audioIcon, m4a: audioIcon,
-    png: imgIcon, jpg: imgIcon, jpeg: imgIcon, gif: imgIcon, webp: imgIcon, bmp: imgIcon, svg: imgIcon,
-    doc: docIcon, docx: docIcon, txt: docIcon, rtf: docIcon, odt: docIcon,
-    exe: exeIcon, msi: exeIcon, app: exeIcon, dmg: exeIcon,
-  };
-  const ext = lower.includes(".") ? lower.slice(lower.lastIndexOf(".") + 1) : "";
-  // Own-property check, not `byExt[ext] ?? ...`: a name like "x.constructor"
-  // would otherwise hit an inherited Object.prototype member and return a
-  // function instead of an icon string.
-  return Object.prototype.hasOwnProperty.call(byExt, ext) ? byExt[ext] : filmIcon;
-}
-
-// Rows are kept alive across polls, keyed by download id, and only their
-// contents are updated in place. Rebuilding the whole list every poll
-// (as this used to) could destroy a button between mousedown and mouseup
-// and silently lose the click, and would wipe a half-typed speed limit.
+// Rows are kept alive across polls, keyed by `rowIdFor`'s id, and only
+// their contents are updated in place. Rebuilding the whole list every poll
+// could destroy a button between mousedown and mouseup and silently lose
+// the click, and would wipe a half-typed speed limit.
 const rowsById = new Map();
 
+// Extract-job rows are kept in `rowsById` alongside HTTP download rows,
+// keyed by this prefixed id so a yt-dlp job's uuid can never collide with
+// an HTTP download's.
+function rowIdFor(item) {
+  return item.kind === "extract" ? `x:${item.id}` : item.id;
+}
+
+function makeCell(className) {
+  const el = document.createElement("span");
+  el.className = className;
+  return el;
+}
+
 function createRow(item) {
-  const isExtract = item.kind === "extract";
-  const svgNs = "http://www.w3.org/2000/svg";
+  const rowId = rowIdFor(item);
 
   const row = document.createElement("div");
-  row.className = "row";
+  row.className = "trow";
 
-  const slot = document.createElement("div");
-  slot.className = "slot";
-  const svgIcon = document.createElementNS(svgNs, "svg");
-  svgIcon.setAttribute("class", "sprite");
-  svgIcon.setAttribute("width", "20");
-  svgIcon.setAttribute("height", "20");
-  svgIcon.setAttribute("viewBox", "0 0 24 24");
-  slot.appendChild(svgIcon);
-  row.appendChild(slot);
+  const cName = makeCell("c-name");
+  const cProgress = makeCell("c-progress");
+  const cSize = makeCell("c-size");
+  const cStatus = makeCell("c-status");
+  const cDate = makeCell("c-date");
+  // Hover-only action links (CSS swaps `.acts` in for `.c-status` on hover).
+  const acts = makeCell("acts");
+  row.append(cName, cProgress, cSize, cStatus, cDate, acts);
 
-  const info = document.createElement("div");
-  info.className = "info";
-
-  const fname = document.createElement("div");
-  fname.className = "fname";
-  info.appendChild(fname);
-
-  // One meta line: a `.sword`-styled status badge followed by the
-  // size/speed text (or, when the item has an error, the error text
-  // instead -- both colored berry, see `updateDownloadRow`/
-  // `updateExtractRow`). Two child spans updated in place so a poll never
-  // has to rebuild this line's DOM, only its text/color.
-  const meta = document.createElement("div");
-  meta.className = "meta";
-  const badge = document.createElement("span");
-  badge.className = "sword";
-  const metaRest = document.createElement("span");
-  metaRest.className = "mrest";
-  meta.appendChild(badge);
-  meta.appendChild(metaRest);
-  info.appendChild(meta);
-
-  const stambarOuter = document.createElement("div");
-  stambarOuter.className = "stambar-outer";
-  const stambarFill = document.createElement("div");
-  stambarFill.className = "stambar-fill";
-  stambarOuter.appendChild(stambarFill);
-  info.appendChild(stambarOuter);
-
-  // Discoverability hint for the right-click menu/double-click-to-open,
-  // shown only on hover/selected (CSS) and only once it actually has text
-  // (`updateRow` clears it for anything but a Completed row with a real
-  // file). Deliberately plain inline content inside `.info` -- a native
-  // `title=""` tooltip floats whatever the OS/browser decides, which could
-  // land right on top of the context menu it's hinting at; this can only
-  // ever push this row's own layout, never float over anything else.
-  const hint = document.createElement("div");
-  hint.className = "hint";
-  info.appendChild(hint);
-
-  row.appendChild(info);
-
-  const actions = document.createElement("div");
-  actions.className = "actions";
-  row.appendChild(actions);
-
-  // Popover: closed by default (`.hidden`), toggled open by this row's
-  // LIMIT or PICK ▾ action button (see `makeToggleButton`). `.row` needs
-  // `position:relative` (in CSS) so this `position:absolute` popover
-  // anchors under the trigger instead of the page. Built once per row
-  // here -- a row's kind (and so which popover it needs) never changes --
-  // and only its *contents* are updated in place afterward.
-  const popover = document.createElement("div");
-  popover.className = "popover hidden";
-  row.appendChild(popover);
+  // The row's one accordion panel -- right-click menu, quality picker and
+  // the per-download speed-limit form all render into this (see
+  // `openUnfold`/`buildUnfoldContent`). Kept out of the DOM while closed (so
+  // closed unfolds never count as `.tbody` children for the zebra striping)
+  // and inserted directly after `row` when opened (`.trow.open + .unfold`).
+  const unfold = document.createElement("div");
+  unfold.className = "unfold hidden";
 
   const els = {
+    rowId,
     row,
-    svgIcon,
-    iconKey: null,
-    fname,
-    badge,
-    metaRest,
-    stambarOuter,
-    stambarFill,
-    hint,
-    actions,
+    cName,
+    cProgress,
+    cSize,
+    cStatus,
+    cDate,
+    acts,
+    unfold,
     actionsKey: null,
-    popover,
+    statusKey: null,
     currentItem: null,
+    lastStatus: undefined,
   };
 
-  // Right-click for the full action menu (FDM/IDM-style), double-click a
+  // Right-click opens the row's unfold (FDM/IDM-style), double-click a
   // finished row to open its file directly -- both read `els.currentItem`
   // at the moment of the event (kept fresh every poll by `updateRow`), not
   // whatever `item` this row happened to be created with.
@@ -316,9 +307,9 @@ function createRow(item) {
     event.stopPropagation();
     const current = els.currentItem;
     if (!current) return;
-    const groups = contextMenuItemsFor(current);
-    if (!groups.length) return;
-    openContextMenu(row, event.clientX, event.clientY, groups);
+    const content = buildUnfoldContent(current);
+    if (!content.length) return;
+    openUnfold(rowId, content);
   });
   row.addEventListener("dblclick", () => {
     const current = els.currentItem;
@@ -329,57 +320,6 @@ function createRow(item) {
       console.error("open_path_in_default_app failed:", err),
     );
   });
-
-  if (isExtract) {
-    const ptitle = document.createElement("div");
-    ptitle.className = "ptitle";
-    ptitle.textContent = "Choose a quality";
-    const pickList = document.createElement("div");
-    pickList.className = "picklist";
-    popover.appendChild(ptitle);
-    popover.appendChild(pickList);
-    els.pickList = pickList;
-    els.formatsKey = null;
-  } else {
-    // Per-download speed limit, applied via the existing
-    // `set_download_speed_limit` command -- today's exact call, just moved
-    // from an always-visible inline input+button into this popover.
-    const ptitle = document.createElement("div");
-    ptitle.className = "ptitle";
-    ptitle.textContent = "Speed limit";
-    const prow = document.createElement("div");
-    prow.className = "prow";
-    const limitInput = document.createElement("input");
-    limitInput.type = "text";
-    limitInput.inputMode = "numeric";
-    limitInput.placeholder = "no limit (bytes/sec)";
-    limitInput.title = "Speed limit for this download, in bytes/sec (empty or 0 = no limit)";
-    const limitButton = document.createElement("button");
-    limitButton.type = "button";
-    limitButton.className = "actbtn";
-    limitButton.textContent = "Set";
-    limitButton.title = "Apply this speed limit";
-    limitButton.addEventListener("click", async () => {
-      limitButton.disabled = true;
-      try {
-        await invoke("set_download_speed_limit", {
-          id: item.id,
-          bytesPerSec: parseSpeedLimit(limitInput.value),
-        });
-        closePopover(els);
-        await refreshList();
-      } catch (err) {
-        console.error("set_download_speed_limit failed:", err);
-      } finally {
-        limitButton.disabled = false;
-      }
-    });
-    prow.appendChild(limitInput);
-    prow.appendChild(limitButton);
-    popover.appendChild(ptitle);
-    popover.appendChild(prow);
-    els.limitInput = limitInput;
-  }
 
   return els;
 }
@@ -406,11 +346,10 @@ function actionsFor(item, els) {
   return item.kind === "extract" ? actionsForExtract(item, els) : actionsForDownload(item, els);
 }
 
-// Each entry is either `{ kind: "invoke", label, onClick, danger }` (built
-// into a real button via `makeActionButton`, same disable/invoke/refresh
-// wrapper as before) or `{ kind: "toggle", label, popover }` (built via
-// `makeToggleButton`, which only shows/hides `popover` and never calls
-// `invoke` itself -- see `buildActionButton`).
+// Each entry is either `{ kind: "invoke", label, onClick, danger }` (an
+// action link that calls `invoke` and refreshes -- see `makeActionLink`) or
+// `{ kind: "unfold", label }` (only opens/closes this row's unfold, never
+// calls `invoke` itself).
 function actionsForDownload(download, els) {
   const id = download.id;
   const actions = [];
@@ -423,23 +362,13 @@ function actionsForDownload(download, els) {
   if (download.status === "Failed") {
     actions.push({ kind: "invoke", label: "Retry", onClick: () => invoke("retry_download", { id }) });
   }
-  // Today's exact `limitable` rule, unchanged: every status except
-  // Completed/Canceled -- this is the gate the plan's Review Focus calls
-  // out by name, so it must keep matching `updateDownloadRow`'s historical
-  // behavior precisely, not the mockup's example rows (which happen not to
-  // show Limit on a Failed row, even though Failed is "limitable" here).
-  const limitable = !["Completed", "Canceled"].includes(download.status);
-  if (limitable) {
-    actions.push({ kind: "toggle", label: "Limit", popover: els.popover });
-  }
+  // The per-download speed limit is no longer a hover action -- it lives in
+  // the row's unfold (see `buildUnfoldContent`, same `limitable` rule).
   if (["Queued", "Downloading", "Paused"].includes(download.status)) {
     actions.push({ kind: "invoke", label: "Cancel", onClick: () => invoke("cancel_download", { id }), danger: true });
   }
-  // Remove used to show unconditionally, on every status -- including
-  // while a download was actively downloading, letting it be removed from
-  // the list mid-transfer with no cancel step at all. Gated to terminal
-  // statuses now, same as extract jobs' Remove (EXTRACT_TERMINAL_STATUSES)
-  // below.
+  // Gated to terminal statuses, same as extract jobs' Remove
+  // (EXTRACT_TERMINAL_STATUSES) below.
   if (TERMINAL_STATUSES.includes(download.status)) {
     actions.push({
       kind: "invoke",
@@ -453,17 +382,17 @@ function actionsForDownload(download, els) {
 
 // Extract jobs only ever get Cancel (while a subprocess could still be
 // running), Retry (once Failed), and Remove (once in any terminal status)
-// -- never Pause/Resume (yt-dlp can't be paused mid-probe/download).
-// Extract rows never get a Limit action/popover -- no backend command
-// exists for an extract job's speed. `AwaitingFormatChoice` (which is also
-// one of `EXTRACT_CANCELABLE_STATUSES`) additionally gets Choose ▾,
-// replacing today's inline `<select>` + "Download" button with this row's
-// popover.
+// -- never Pause/Resume (yt-dlp can't be paused mid-probe/download) and
+// never a speed limit (no backend command exists for an extract job's
+// speed). `AwaitingFormatChoice` additionally gets "Choose", which only
+// opens this row's unfold on the quality picker: the Status cell's own
+// click-to-choose affordance is hidden while the row is hovered (CSS swaps
+// `.acts` in for `.c-status`), so this is the hover-time way to reach it.
 function actionsForExtract(job, els) {
   const id = job.id;
   const actions = [];
   if (job.status === "AwaitingFormatChoice") {
-    actions.push({ kind: "toggle", label: "Choose ▾", popover: els.popover });
+    actions.push({ kind: "unfold", label: "Choose", primary: true });
   }
   if (EXTRACT_CANCELABLE_STATUSES.includes(job.status)) {
     actions.push({ kind: "invoke", label: "Cancel", onClick: () => invoke("cancel_extract_job", { id }), danger: true });
@@ -477,25 +406,50 @@ function actionsForExtract(job, els) {
   return actions;
 }
 
-// Right-click menu content for a row, grouped the same way the menu
-// renders them (a `.pickdiv` divider between each non-empty group): file
-// actions (only once a real finished file exists), copying the original
-// source link, the row's own status action (mirrors `actionsForDownload`/
-// `actionsForExtract` above, minus the LIMIT/PICK popovers -- those stay
-// button-only), then Remove. Returns an array of groups (each an array of
-// `{ label, onClick, danger?, skipRefresh? }`); an empty group is never
-// included, so the caller never has to guard against a leading/trailing/
-// doubled divider.
+// One `.uf-opt` row: icon + label. Clicking it closes the unfold first, then
+// runs `onClick` and (unless `skipRefresh`) refreshes the list.
+function makeUnfoldOption(rowId, entry) {
+  const opt = document.createElement("div");
+  opt.className = entry.danger ? "uf-opt danger" : "uf-opt";
+  opt.innerHTML = entry.icon ? ufIconMarkup(entry.icon) : "";
+  const label = document.createElement("span");
+  label.textContent = entry.label;
+  opt.appendChild(label);
+  opt.addEventListener("click", async () => {
+    closeUnfold(rowId);
+    try {
+      await entry.onClick();
+      if (!entry.skipRefresh) await refreshList();
+    } catch (err) {
+      console.error(`${entry.label} failed:`, err);
+    }
+  });
+  return opt;
+}
+
+function makeUnfoldDivider() {
+  const div = document.createElement("div");
+  div.className = "uf-div";
+  return div;
+}
+
+// Right-click content for a row, grouped with a `.uf-div` divider between
+// each non-empty group: file actions (only once a real finished file
+// exists), copying the original source link, the row's own status action
+// (mirrors `actionsForDownload`/`actionsForExtract` above), then Remove. An
+// empty group is never included, so there's never a leading/trailing/
+// doubled divider. Returns an array of DOM elements.
 function contextMenuItemsFor(item) {
   const isExtract = item.kind === "extract";
   const id = item.id;
+  const rowId = rowIdFor(item);
   const groups = [];
 
   const filePath = isExtract ? item.final_path : item.dest_path;
   if (item.status === "Completed" && filePath) {
     groups.push([
-      { label: "Open file", onClick: () => invoke("open_path_in_default_app", { path: filePath }) },
-      { label: "Open file location", onClick: () => invoke("reveal_path_in_file_manager", { path: filePath }) },
+      { label: "Open file", icon: "open", onClick: () => invoke("open_path_in_default_app", { path: filePath }) },
+      { label: "Open file location", icon: "folder", onClick: () => invoke("reveal_path_in_file_manager", { path: filePath }) },
     ]);
   }
 
@@ -504,6 +458,7 @@ function contextMenuItemsFor(item) {
     groups.push([
       {
         label: "Copy download link",
+        icon: "link",
         skipRefresh: true,
         onClick: () => navigator.clipboard.writeText(linkUrl),
       },
@@ -513,23 +468,23 @@ function contextMenuItemsFor(item) {
   const statusGroup = [];
   if (isExtract) {
     if (item.status === "Failed") {
-      statusGroup.push({ label: "Retry", onClick: () => invoke("retry_extract_job", { id }) });
+      statusGroup.push({ label: "Retry", icon: "retry", onClick: () => invoke("retry_extract_job", { id }) });
     }
     if (EXTRACT_CANCELABLE_STATUSES.includes(item.status)) {
-      statusGroup.push({ label: "Cancel", danger: true, onClick: () => invoke("cancel_extract_job", { id }) });
+      statusGroup.push({ label: "Cancel", icon: "cancel", danger: true, onClick: () => invoke("cancel_extract_job", { id }) });
     }
   } else {
     if (item.status === "Downloading") {
-      statusGroup.push({ label: "Pause", onClick: () => invoke("pause_download", { id }) });
+      statusGroup.push({ label: "Pause", icon: "pause", onClick: () => invoke("pause_download", { id }) });
     }
     if (item.status === "Paused") {
-      statusGroup.push({ label: "Resume", onClick: () => invoke("resume_download", { id }) });
+      statusGroup.push({ label: "Resume", icon: "resume", onClick: () => invoke("resume_download", { id }) });
     }
     if (item.status === "Failed") {
-      statusGroup.push({ label: "Retry", onClick: () => invoke("retry_download", { id }) });
+      statusGroup.push({ label: "Retry", icon: "retry", onClick: () => invoke("retry_download", { id }) });
     }
     if (["Queued", "Downloading", "Paused"].includes(item.status)) {
-      statusGroup.push({ label: "Cancel", danger: true, onClick: () => invoke("cancel_download", { id }) });
+      statusGroup.push({ label: "Cancel", icon: "cancel", danger: true, onClick: () => invoke("cancel_download", { id }) });
     }
   }
   if (statusGroup.length) groups.push(statusGroup);
@@ -541,87 +496,197 @@ function contextMenuItemsFor(item) {
     groups.push([
       {
         label: "Remove",
+        icon: "remove",
         danger: item.status === "Failed",
         onClick: () => (isExtract ? invoke("remove_extract_job", { id }) : removeDownload(item)),
       },
     ]);
   }
 
-  return groups;
+  return groups.flatMap((group, groupIndex) => [
+    ...(groupIndex > 0 ? [makeUnfoldDivider()] : []),
+    ...group.map((entry) => makeUnfoldOption(rowId, entry)),
+  ]);
 }
 
-// One shared context-menu element, reused for every row (repopulated and
-// repositioned on each right-click) rather than one per row -- a row's
-// menu contents depend only on its current status, so there is nothing a
-// per-row instance would preserve between opens.
-const contextMenuEl = document.createElement("div");
-contextMenuEl.className = "popover ctxmenu hidden";
-document.body.appendChild(contextMenuEl);
-
-// The row the open menu belongs to, highlighted (`.row.selected`,
-// styles.css) for as long as the menu stays open -- same convention as
-// FDM/IDM's own row context menu, not a brief flash.
-let selectedMenuRow = null;
-
-function closeContextMenu() {
-  contextMenuEl.classList.add("hidden");
-  selectedMenuRow?.classList.remove("selected");
-  selectedMenuRow = null;
+// The unfold's first line on a Failed row: the raw error text (the Status
+// cell itself only ever shows the plain word "Failed").
+function makeErrorLine(text) {
+  const line = document.createElement("div");
+  line.className = "uf-error";
+  line.innerHTML = statusIconMarkup("failed", "Failed");
+  const span = document.createElement("span");
+  span.textContent = text;
+  line.appendChild(span);
+  return line;
 }
 
-function openContextMenu(row, clientX, clientY, groups) {
-  selectedMenuRow?.classList.remove("selected");
-  selectedMenuRow = row;
-  row.classList.add("selected");
-  contextMenuEl.replaceChildren(
-    ...groups.flatMap((group, groupIndex) => {
-      const divider = [];
-      if (groupIndex > 0) {
-        const div = document.createElement("div");
-        div.className = "pickdiv";
-        divider.push(div);
-      }
-      const buttons = group.map((entry) => {
-        const button = document.createElement("button");
-        button.type = "button";
-        button.className = entry.danger ? "pick danger" : "pick";
-        button.textContent = entry.label;
-        button.addEventListener("click", async () => {
-          closeContextMenu();
-          try {
-            await entry.onClick();
-            if (!entry.skipRefresh) await refreshList();
-          } catch (err) {
-            console.error(`${entry.label} failed:`, err);
-          }
+// The per-download speed limit, applied via the existing
+// `set_download_speed_limit` command. Starts as one `.uf-opt` row; clicking
+// it swaps that row in place for the `.uf-form` input + Set button.
+function makeSpeedLimitOption(download) {
+  const rowId = rowIdFor(download);
+  const opt = document.createElement("div");
+  opt.className = "uf-opt";
+  opt.innerHTML = ufIconMarkup("speed");
+  const label = document.createElement("span");
+  label.textContent = "Limit speed…";
+  opt.appendChild(label);
+
+  opt.addEventListener("click", () => {
+    const form = document.createElement("div");
+    form.className = "uf-form";
+    const limitInput = document.createElement("input");
+    limitInput.type = "text";
+    limitInput.inputMode = "numeric";
+    limitInput.placeholder = "no limit (bytes/sec)";
+    limitInput.title = "Speed limit for this download, in bytes/sec (empty or 0 = no limit)";
+    const limitButton = document.createElement("button");
+    limitButton.type = "button";
+    limitButton.textContent = "Set";
+    limitButton.title = "Apply this speed limit";
+    limitButton.addEventListener("click", async () => {
+      limitButton.disabled = true;
+      try {
+        await invoke("set_download_speed_limit", {
+          id: download.id,
+          bytesPerSec: parseSpeedLimit(limitInput.value),
         });
-        return button;
-      });
-      return [...divider, ...buttons];
-    }),
-  );
-  contextMenuEl.classList.remove("hidden");
+        closeUnfold(rowId);
+        await refreshList();
+      } catch (err) {
+        console.error("set_download_speed_limit failed:", err);
+      } finally {
+        limitButton.disabled = false;
+      }
+    });
+    limitInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        limitButton.click();
+      }
+    });
+    form.append(limitInput, limitButton);
+    opt.replaceWith(form);
+    limitInput.focus();
+  });
 
-  // Measured only after the menu has real content, then clamped so a
-  // right-click near the window's edge never renders it partly off-screen.
-  const rect = contextMenuEl.getBoundingClientRect();
-  const maxX = Math.max(4, window.innerWidth - rect.width - 4);
-  const maxY = Math.max(4, window.innerHeight - rect.height - 4);
-  contextMenuEl.style.left = `${Math.max(4, Math.min(clientX, maxX))}px`;
-  contextMenuEl.style.top = `${Math.max(4, Math.min(clientY, maxY))}px`;
+  return opt;
 }
 
-// Closes the context menu on an ordinary left-click anywhere outside it,
-// on Escape, and on a *second* right-click landing outside it (each row's
-// own `contextmenu` handler calls `stopPropagation`, so right-clicking the
-// row that's opening a menu never immediately closes the menu it just
-// opened via this same listener).
-document.addEventListener("click", (event) => {
-  if (!contextMenuEl.contains(event.target)) closeContextMenu();
-});
-document.addEventListener("contextmenu", closeContextMenu);
+// The quality picker: a title plus one `.uf-opt` per offered format. One
+// click picks and starts via the existing `choose_extract_format` call.
+function makeQualityPicker(job) {
+  const rowId = rowIdFor(job);
+  const title = document.createElement("div");
+  title.className = "uf-title";
+  title.textContent = "Choose a quality";
+  const opts = job.formats.map((format) => {
+    const opt = document.createElement("div");
+    opt.className = "uf-opt";
+    const label = document.createElement("span");
+    label.textContent = format.label;
+    opt.appendChild(label);
+    let busy = false;
+    opt.addEventListener("click", async () => {
+      if (busy) return;
+      busy = true;
+      try {
+        await invoke("choose_extract_format", {
+          id: job.id,
+          formatLabel: format.label,
+        });
+        closeUnfold(rowId);
+        await refreshList();
+      } catch (err) {
+        console.error("choose_extract_format failed:", err);
+      } finally {
+        busy = false;
+      }
+    });
+    return opt;
+  });
+  return [title, ...opts];
+}
+
+// Everything a row's unfold shows, for its current item:
+//  - an extract job awaiting a format choice: the quality picker first,
+//    then (after a divider) the usual right-click entries;
+//  - otherwise: the error line (Failed only), the speed-limit option
+//    (downloads with today's `limitable` rule: every status except
+//    Completed/Canceled), then the usual right-click entries.
+function buildUnfoldContent(item) {
+  const menuItems = contextMenuItemsFor(item);
+
+  if (item.kind === "extract" && item.status === "AwaitingFormatChoice") {
+    const picker = makeQualityPicker(item);
+    return menuItems.length ? [...picker, makeUnfoldDivider(), ...menuItems] : picker;
+  }
+
+  const content = [];
+  if (item.status === "Failed") {
+    content.push(makeErrorLine(item.error || "Failed"));
+  }
+  if (item.kind !== "extract") {
+    const limitable = !["Completed", "Canceled"].includes(item.status);
+    if (limitable) {
+      content.push(makeSpeedLimitOption(item));
+      if (menuItems.length) content.push(makeUnfoldDivider());
+    }
+  }
+  content.push(...menuItems);
+  return content;
+}
+
+// At most one row's unfold is open at a time.
+const openUnfoldIds = new Set();
+
+function closeUnfold(rowId) {
+  const els = rowsById.get(rowId);
+  if (!els) return;
+  els.unfold.classList.add("hidden");
+  els.unfold.replaceChildren();
+  els.unfold.remove();
+  els.row.classList.remove("open");
+  openUnfoldIds.delete(rowId);
+}
+
+function openUnfold(rowId, contentEls) {
+  for (const id of Array.from(openUnfoldIds)) closeUnfold(id);
+  const els = rowsById.get(rowId);
+  if (!els) return;
+  els.unfold.replaceChildren(...contentEls);
+  els.unfold.classList.remove("hidden");
+  els.row.after(els.unfold);
+  els.row.classList.add("open");
+  openUnfoldIds.add(rowId);
+}
+
+function toggleUnfold(rowId) {
+  if (openUnfoldIds.has(rowId)) {
+    closeUnfold(rowId);
+    return;
+  }
+  const current = rowsById.get(rowId)?.currentItem;
+  if (current) openUnfold(rowId, buildUnfoldContent(current));
+}
+
+// Closes an open unfold on an ordinary left-click or a right-click landing
+// outside both it and its row, and on Escape. Uses `composedPath()` (fixed
+// at dispatch time) rather than `contains(event.target)`, because a click
+// inside the unfold can detach its own target before the event bubbles
+// here (e.g. "Limit speed…" replacing itself with the form).
+function closeUnfoldsOutside(event) {
+  const path = event.composedPath();
+  for (const id of Array.from(openUnfoldIds)) {
+    const els = rowsById.get(id);
+    if (els && !path.includes(els.unfold) && !path.includes(els.row)) closeUnfold(id);
+  }
+}
+document.addEventListener("click", closeUnfoldsOutside);
+document.addEventListener("contextmenu", closeUnfoldsOutside);
 document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape") closeContextMenu();
+  if (event.key === "Escape") for (const id of Array.from(openUnfoldIds)) closeUnfold(id);
 });
 
 function updateRow(els, item) {
@@ -631,240 +696,148 @@ function updateRow(els, item) {
   // the row happened to show when it was first created.
   els.currentItem = item;
 
-  const filePath = item.kind === "extract" ? item.final_path : item.dest_path;
-  // Shown on hover/selected via CSS (`.row:hover .hint`/`.row.selected
-  // .hint`); empty text means nothing to show, so hovering a row with no
-  // file yet (nothing to open) reveals no hint at all.
-  els.hint.textContent =
-    item.status === "Completed" && filePath ? "Double-click to open · right-click for more" : "";
+  const isExtract = item.kind === "extract";
+  const nameText = isExtract ? item.title || item.source_url : item.filename;
+  if (els.cName.textContent !== nameText) {
+    els.cName.textContent = nameText;
+    els.cName.title = nameText;
+  }
 
-  if (item.kind === "extract") {
+  const sizeText = sizeCellText(item);
+  if (els.cSize.textContent !== sizeText) els.cSize.textContent = sizeText;
+
+  const dateText = formatDateAdded(item.created_at);
+  if (els.cDate.textContent !== dateText) els.cDate.textContent = dateText;
+
+  updateProgressCell(els, item);
+
+  if (isExtract) {
     updateExtractRow(els, item);
   } else {
     updateDownloadRow(els, item);
   }
 }
 
+// Progress cell: a `.bar > .fill` plus a `.pct` label while Downloading
+// (indeterminate -- full, dimmed fill and no percentage -- when the total
+// size isn't known), empty otherwise. The bar's elements are built once
+// and reused across polls.
+function updateProgressCell(els, item) {
+  const downloading = item.status === "Downloading";
+  const speed = liveSpeedBytesPerSec(els, item.downloaded_bytes, downloading);
+
+  if (!downloading) {
+    if (els.cProgress.firstChild) els.cProgress.replaceChildren();
+    els.cProgress.title = "";
+    return;
+  }
+
+  if (!els.bar) {
+    els.bar = document.createElement("div");
+    els.bar.className = "bar";
+    els.fill = document.createElement("div");
+    els.fill.className = "fill";
+    els.bar.appendChild(els.fill);
+    els.pct = document.createElement("span");
+    els.pct.className = "pct";
+  }
+  if (els.bar.parentNode !== els.cProgress) els.cProgress.replaceChildren(els.bar, els.pct);
+
+  const pct = progressPercent(item);
+  els.bar.classList.toggle("indeterminate", pct == null);
+  els.fill.style.width = `${pct ?? 100}%`;
+  els.fill.style.opacity = pct == null ? "0.35" : "";
+  const pctText = pct == null ? "" : `${Math.floor(pct)}%`;
+  if (els.pct.textContent !== pctText) els.pct.textContent = pctText;
+  els.cProgress.title = sizeAndSpeedText(item.downloaded_bytes, item.total_bytes, speed);
+}
+
+// Status cell: the plain status word, with a leading icon for Completed/
+// Failed/Paused. An AwaitingFormatChoice row's cell becomes clickable
+// (`.choose` + chevron) and opens the quality picker. Rebuilt only when the
+// status changes. The raw error text never shows here -- only in the unfold.
+function updateStatusCell(els, item, word) {
+  if (els.statusKey === item.status) return;
+  els.statusKey = item.status;
+
+  const choose = item.kind === "extract" && item.status === "AwaitingFormatChoice";
+  els.cStatus.classList.toggle("failed", item.status === "Failed");
+  els.cStatus.classList.toggle("choose", choose);
+  els.cStatus.innerHTML = statusIconMarkup(item.status === "Failed" ? "failed" : "", item.status);
+  const wordEl = document.createElement("span");
+  wordEl.textContent = word;
+  els.cStatus.appendChild(wordEl);
+  if (choose) {
+    els.cStatus.insertAdjacentHTML("beforeend", CHOOSE_CHEVRON_MARKUP);
+    els.cStatus.onclick = () => toggleUnfold(els.rowId);
+  } else {
+    els.cStatus.onclick = null;
+  }
+}
+
+// Hover action links only change when the status does, so they are only
+// rebuilt then -- a click in progress is never interrupted by an ordinary
+// poll. A status change also closes this row's unfold, whose contents were
+// built for the old status.
+function updateActions(els, item, actionsKey) {
+  if (els.actionsKey === actionsKey) return;
+  const firstBuild = els.actionsKey === null;
+  els.actionsKey = actionsKey;
+  els.acts.replaceChildren(...actionsFor(item, els).map((action) => buildActionLink(els, action)));
+  if (!firstBuild && openUnfoldIds.has(els.rowId)) closeUnfold(els.rowId);
+}
+
 function updateDownloadRow(els, download) {
-  if (els.fname.textContent !== download.filename) {
-    els.fname.textContent = download.filename;
-  }
-
-  // Icon only re-rendered when the filename actually changes (it's fixed
-  // per download in practice, but `els.iconKey` guards it the same way
-  // `actionsKey` guards the action buttons below).
-  const iconKey = download.filename;
-  if (els.iconKey !== iconKey) {
-    els.iconKey = iconKey;
-    renderIconInto(els.svgIcon, iconMarkupForFilename(download.filename));
-  }
-
-  const pct = progressPercent(download);
-  els.stambarFill.style.width = `${pct ?? 0}%`;
-  els.stambarOuter.classList.toggle("indeterminate", pct == null);
-  els.stambarOuter.classList.toggle("hidden", TERMINAL_STATUSES.includes(download.status));
-  // Paused rows render the fill in `--ink-dim` (spec Appendix A
-  // mockup row) so a paused download reads visually distinct from an
-  // actively-downloading one; every other status keeps the CSS default
-  // (`--stamina`, set on `.stambar-fill` itself) by clearing the inline
-  // override.
-  els.stambarFill.style.background = download.status === "Paused" ? "var(--ink-dim)" : "";
-
-  const [badgeWord, badgeColor] = DOWNLOAD_BADGE[download.status] ?? ["", "var(--ink-dim)"];
-  if (els.badge.textContent !== badgeWord) {
-    els.badge.textContent = badgeWord;
-  }
-  els.badge.style.color = badgeColor;
-
-  // One meta line: badge + size/speed normally, or badge + the error text
-  // (both colored berry) when the download has failed -- same `error`
-  // field, just no longer a separate `.download-error` block below.
-  const speed = liveSpeedBytesPerSec(els, download.downloaded_bytes, download.status === "Downloading");
-  const sizeText = sizeAndSpeedText(download.downloaded_bytes, download.total_bytes, speed);
-  const errorText = download.error || "";
-  const restText = errorText ? ` — ${errorText}` : ` — ${sizeText}`;
-  if (els.metaRest.textContent !== restText) {
-    els.metaRest.textContent = restText;
-  }
-  els.metaRest.style.color = errorText ? "var(--berry)" : "";
-
-  // Buttons only change when the status does, so they are only rebuilt
-  // then -- a click in progress is never interrupted by an ordinary poll.
-  // The handlers close over this snapshot of `download`, which is fine:
-  // everything they read (id, status, filename) is fixed for as long as
-  // the status (and therefore these buttons) stays the same.
-  const actionsKey = `${download.status}|${download.filename}`;
-  if (els.actionsKey !== actionsKey) {
-    els.actionsKey = actionsKey;
-    els.actions.replaceChildren(...actionsFor(download, els).map(buildActionButton));
-    // The LIMIT button (and so any reason to have this popover open) may
-    // no longer exist after a status change -- close it rather than leave
-    // it open against a trigger button that just got replaced.
-    els.popover.classList.add("hidden");
-  }
+  updateStatusCell(els, download, DOWNLOAD_BADGE[download.status] ?? "");
+  updateActions(els, download, `${download.status}|${download.filename}`);
 }
 
 function updateExtractRow(els, job) {
-  const titleText = job.title || job.source_url;
-  if (els.fname.textContent !== titleText) {
-    els.fname.textContent = titleText;
-  }
-
-  // Extract rows always show the film icon (spec: "everything else,
-  // including all video/extract rows, -> film icon") -- rendered once,
-  // never re-sniffed from `job.title`/`job.source_url`.
-  if (els.iconKey !== "extract") {
-    els.iconKey = "extract";
-    renderIconInto(els.svgIcon, filmIcon);
-  }
-
-  const awaitingChoice = job.status === "AwaitingFormatChoice";
-  els.stambarOuter.classList.toggle("hidden", awaitingChoice || TERMINAL_STATUSES.includes(job.status));
-
-  if (awaitingChoice) {
-    // Pick rows only rebuilt when the set of labels actually changes, so
-    // the popover's contents survive an ordinary poll while it's open.
-    const formatsKey = job.formats.map((f) => f.label).join("|");
-    if (els.formatsKey !== formatsKey) {
-      els.formatsKey = formatsKey;
-      els.pickList.replaceChildren(
-        ...job.formats.map((format) => {
-          const pickButton = document.createElement("button");
-          pickButton.type = "button";
-          pickButton.className = "pick";
-          pickButton.textContent = format.label;
-          // Today's exact `choose_extract_format` call, just invoked
-          // directly from the popover row instead of a <select> + separate
-          // "Download" button -- one click picks and starts, no confirm
-          // step, per the brief.
-          pickButton.addEventListener("click", async () => {
-            pickButton.disabled = true;
-            try {
-              await invoke("choose_extract_format", {
-                id: job.id,
-                formatLabel: format.label,
-              });
-              closePopover(els);
-              await refreshList();
-            } catch (err) {
-              console.error("choose_extract_format failed:", err);
-            } finally {
-              pickButton.disabled = false;
-            }
-          });
-          return pickButton;
-        }),
-      );
-    }
-  } else {
-    const pct = progressPercent(job);
-    els.stambarFill.style.width = `${pct ?? 0}%`;
-    els.stambarOuter.classList.toggle("indeterminate", pct == null);
-  }
-
-  const [badgeWord, badgeColor] = EXTRACT_BADGE[job.status] ?? ["", "var(--ink-dim)"];
-  if (els.badge.textContent !== badgeWord) {
-    els.badge.textContent = badgeWord;
-  }
-  els.badge.style.color = badgeColor;
-
-  const speed = liveSpeedBytesPerSec(els, job.downloaded_bytes, job.status === "Downloading");
-  const sizeText = sizeAndSpeedText(job.downloaded_bytes, job.total_bytes, speed);
-  const errorText = job.error || "";
-  let restText = "";
-  if (errorText) {
-    restText = ` — ${errorText}`;
-  } else if (!awaitingChoice) {
-    restText = ` — ${sizeText}`;
-  }
-  if (els.metaRest.textContent !== restText) {
-    els.metaRest.textContent = restText;
-  }
-  els.metaRest.style.color = errorText ? "var(--berry)" : "";
-
-  const actionsKey = `${job.status}|${job.title}`;
-  if (els.actionsKey !== actionsKey) {
-    els.actionsKey = actionsKey;
-    els.actions.replaceChildren(...actionsFor(job, els).map(buildActionButton));
-    els.popover.classList.add("hidden");
-  }
+  updateStatusCell(els, job, EXTRACT_BADGE[job.status] ?? "");
+  updateActions(els, job, `${job.status}|${job.title}`);
 }
 
-function makeActionButton(label, onClick, danger) {
-  const button = document.createElement("button");
-  button.type = "button";
-  button.className = danger ? "actbtn danger" : "actbtn";
-  button.textContent = label;
-  button.addEventListener("click", async () => {
-    button.disabled = true;
+function makeActionLink(label, onClick, danger) {
+  const link = document.createElement("span");
+  if (danger) link.className = "danger";
+  link.textContent = label;
+  let busy = false;
+  link.addEventListener("click", async () => {
+    if (busy) return;
+    busy = true;
     try {
       await onClick();
       await refreshList();
     } catch (err) {
       console.error(`${label} failed:`, err);
     } finally {
-      button.disabled = false;
+      busy = false;
     }
   });
-  return button;
+  return link;
 }
 
-// LIMIT / PICK ▾ trigger buttons never call `invoke` themselves -- clicking
-// one only shows/hides this row's own popover (built once in `createRow`;
-// its SET button / `.pick` rows are what actually call `invoke`). `.active`
-// (spec: solid ink background) marks the currently-open trigger.
-function makeToggleButton(label, popoverEl) {
-  const button = document.createElement("button");
-  button.type = "button";
-  button.className = "actbtn";
-  button.textContent = label;
-  button.addEventListener("click", () => {
-    const opening = popoverEl.classList.contains("hidden");
-    popoverEl.classList.toggle("hidden", !opening);
-    button.classList.toggle("active", opening);
-  });
-  return button;
-}
-
-function buildActionButton(action) {
-  if (action.kind === "toggle") {
-    return makeToggleButton(action.label, action.popover);
+function buildActionLink(els, action) {
+  if (action.kind === "unfold") {
+    const link = document.createElement("span");
+    if (action.primary) link.className = "primary";
+    link.textContent = action.label;
+    link.addEventListener("click", () => toggleUnfold(els.rowId));
+    return link;
   }
-  return makeActionButton(action.label, action.onClick, action.danger);
-}
-
-// Closes a row's popover AND clears its trigger button's `.active` state.
-// The `actionsKey`-change path in `updateDownloadRow`/`updateExtractRow`
-// doesn't need this (it calls `els.actions.replaceChildren(...)`, which
-// throws away the old trigger button -- any stale `.active` class goes
-// with it). This is for the other path: closing a popover programmatically
-// after a successful SET/pick click, where nothing guarantees `actionsKey`
-// changes (e.g. setting a speed limit never changes `download.status`), so
-// without this the LIMIT/PICK trigger would stay visually "stuck" in its
-// solid-ink active state after the popover is actually closed.
-function closePopover(els) {
-  els.popover.classList.add("hidden");
-  els.actions.querySelector(".active")?.classList.remove("active");
-}
-
-// Extract-job rows are kept in `rowsById` alongside HTTP download rows,
-// keyed by this prefixed id so a yt-dlp job's uuid can never collide with
-// an HTTP download's.
-function rowIdFor(item) {
-  return item.kind === "extract" ? `x:${item.id}` : item.id;
+  return makeActionLink(action.label, action.onClick, action.danger);
 }
 
 // Last-known-good lists, used so a transient failure of one `invoke` call
-// below leaves that kind's rows exactly as they were on screen (matching
-// the pre-extract-jobs behavior of freezing in place) instead of the
-// merged `items` list silently omitting that kind and the prune loop
+// below leaves that kind's rows exactly as they were on screen instead of
+// the merged `items` list silently omitting that kind and the prune loop
 // deleting every one of its rows for a single missed poll.
 let lastDownloads = [];
 let lastExtractJobs = [];
 
 // Cached copy of the persisted settings, kept in sync by every place that
-// loads or saves them (the Settings panel's open handler and its form
-// submit), so `handleStatusTransition` below can check `harvest_chime`/
+// loads or saves them (the Settings page's open handler and its save), so
+// `handleStatusTransition` below can check `harvest_chime`/
 // `auto_replant_failed` on every poll without an `invoke` round-trip per
 // row per poll. Defaults match `SettingsDto::default()` until the real
 // startup fetch (below) resolves.
@@ -885,14 +858,11 @@ const AUTO_REPLANT_MAX_ATTEMPTS = 3;
 
 // Plays a short, soft two-tone notification chime via the Web Audio API
 // -- synthesized at runtime rather than shipping a sound asset, so
-// there's no licensing/sourcing question for what file to bundle. A
-// plain sine tone with a gentle attack/decay, not the square-wave
-// "item get" chiptune blip this used to be -- that read as a game sound
-// effect, out of place once the rest of the UI stopped looking like one.
-// Never throws: AudioContext can be unavailable (and in some browsers
-// requires a prior user gesture, which every path that calls this
-// already follows, since it only ever fires off the back of a poll
-// reacting to a download the user themselves started).
+// there's no licensing/sourcing question for what file to bundle. Never
+// throws: AudioContext can be unavailable (and in some browsers requires a
+// prior user gesture, which every path that calls this already follows,
+// since it only ever fires off the back of a poll reacting to a download
+// the user themselves started).
 function playHarvestChime() {
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -948,27 +918,23 @@ function handleStatusTransition(rowId, els, item) {
   }
 }
 
-// Status bar text: "<N> downloads" / "<M> active" normally, or
-// "0 downloads" / "No active downloads" when the merged list is empty.
-// "Downloading" is the badge word both `DOWNLOAD_BADGE.Downloading` and
-// `EXTRACT_BADGE.Downloading` map to -- the only status either mapping
-// gives that word, so counting `status === "Downloading"` directly here
-// matches it without needing that mapping object to exist yet.
-//
-// "download"/"downloads" is a countable noun, so it's singular for
-// exactly 1 ("1 download") and plural otherwise ("0 downloads"/
-// "2 downloads"), rather than always appending the plural noun. "active"
-// is a status word, not a countable noun, so it's never pluralized --
-// "1 active" and "2 active" are both already correct.
+// Status bar: "<N> item(s)", then "— <M> active, <speed>/s" while anything
+// is downloading (empty otherwise). The combined speed sums each
+// Downloading row's `els.speedLast`, already sampled this poll by
+// `updateProgressCell` -- so this must run after the rows are updated.
 function updateStatusBar(items) {
   const n = items.length;
-  statusTasksEl.textContent = `${n} ${n === 1 ? "download" : "downloads"}`;
-  if (n === 0) {
-    statusWorkingEl.textContent = "No active downloads";
-  } else {
-    const working = items.filter((item) => item.status === "Downloading").length;
-    statusWorkingEl.textContent = `${working} active`;
+  statusTasksEl.textContent = n === 0 ? "0 items" : `${n} item${n === 1 ? "" : "s"}`;
+
+  let activeCount = 0;
+  let combinedSpeed = 0;
+  for (const item of items) {
+    if (item.status !== "Downloading") continue;
+    activeCount += 1;
+    combinedSpeed += rowsById.get(rowIdFor(item))?.speedLast ?? 0;
   }
+  statusWorkingEl.textContent =
+    activeCount > 0 ? `— ${activeCount} active, ${formatBytes(combinedSpeed)}/s` : "";
 }
 
 async function refreshList() {
@@ -996,11 +962,6 @@ async function refreshList() {
   const isEmpty = items.length === 0;
   emptyStateEl.classList.toggle("hidden", !isEmpty);
   queueListEl.classList.toggle("hidden", isEmpty);
-  // The empty state has its own "+ Add download" button -- showing the
-  // addrow above the list too, on top of it, is a redundant second way to
-  // do the exact same thing while the list is empty.
-  addrowBtn.classList.toggle("hidden", isEmpty);
-  updateStatusBar(items);
 
   const seen = new Set();
   let previous = null;
@@ -1017,28 +978,28 @@ async function refreshList() {
 
     // Keep DOM order matching the backend's order, moving a row only if
     // it's actually out of place (moving detaches it, which would also
-    // interrupt a click).
+    // interrupt a click). An open unfold must stay directly after its row.
     const expectedNext = previous ? previous.nextSibling : queueListEl.firstChild;
     if (expectedNext !== els.row) {
       queueListEl.insertBefore(els.row, expectedNext);
     }
     previous = els.row;
+    if (els.unfold.isConnected) {
+      if (els.row.nextSibling !== els.unfold) els.row.after(els.unfold);
+      previous = els.unfold;
+    }
   }
 
   for (const [id, els] of rowsById) {
     if (!seen.has(id)) {
       els.row.remove();
+      els.unfold.remove();
+      openUnfoldIds.delete(id);
       rowsById.delete(id);
     }
   }
-}
 
-function openPanel(panelEl) {
-  panelEl.classList.remove("hidden");
-}
-
-function closePanel(panelEl) {
-  panelEl.classList.add("hidden");
+  updateStatusBar(items);
 }
 
 function showError(el, message) {
@@ -1050,49 +1011,28 @@ function hideError(el) {
   el.classList.add("hidden");
 }
 
-// Neutral status-text helper, same idiom as the existing yt-dlp update
-// status line (`ytdlpUpdateStatusEl`, below): plain `.ssub` text by
-// default, only gaining `.error` (the existing global `.ssub.error` rule)
-// when `isError` is true. Unlike `showError`/`hideError` above -- which
-// always mean "a real failure happened" -- this is for a status line that
-// is shown on every attempt, success included, so a normal confirmation
-// never renders in error-red just because it happens to share the display
-// mechanics of an error message.
+// Neutral status-text helper, same idiom as the yt-dlp update status line
+// (`ytdlpUpdateStatusEl`, below): plain `.ssub` text by default, only
+// gaining `.error` (the global `.ssub.error` rule) when `isError` is true.
+// Unlike `showError`/`hideError` above -- which always mean "a real failure
+// happened" -- this is for a status line that is shown on every attempt,
+// success included, so a normal confirmation never renders in error-red.
 function setStatus(el, message, isError) {
   el.textContent = message;
   el.classList.toggle("error", Boolean(isError));
 }
 
-// Opens the Add Download panel -- today's #open-add-btn's job, now
-// triggered from two places (Step 3's always-visible .addrow row and the
-// empty state's own .ebtn), both wired to this one function so there's
-// exactly one way the panel actually opens.
-function openAddPanel() {
-  addFormEl.reset();
-  hideError(addErrorEl);
-  openPanel(addPanelEl);
-}
-addrowBtn.addEventListener("click", openAddPanel);
-emptyAddBtn.addEventListener("click", openAddPanel);
-
-document.getElementById("cancel-add-btn").addEventListener("click", () => {
-  closePanel(addPanelEl);
-});
-
-document.getElementById("add-panel-close").addEventListener("click", () => {
-  closePanel(addPanelEl);
-});
-
+// The addbar is always visible: Enter in the link field submits straight to
+// `add_download` (no filename field -- the backend picks the name).
 addFormEl.addEventListener("submit", async (event) => {
   event.preventDefault();
   hideError(addErrorEl);
 
   const url = addUrlEl.value.trim();
-  const filename = addFilenameEl.value.trim();
 
   try {
-    await invoke("add_download", { url, filename: filename || null });
-    closePanel(addPanelEl);
+    await invoke("add_download", { url, filename: null });
+    addUrlEl.value = "";
     await refreshList();
   } catch (err) {
     showError(addErrorEl, String(err));
@@ -1108,12 +1048,8 @@ function isSwitchOn(el) {
   return el.classList.contains("on");
 }
 
-// Opens the Settings panel -- today's #open-settings-btn's job, now
-// triggered from the status bar's .shedbtn (Step 4).
 // Renders a paired-profile's `paired_at` (Unix seconds, from the backend --
-// see `PairedProfile`'s doc comment) in the viewer's own locale/timezone,
-// which is simpler and more correct than formatting a date in Rust ever
-// could be from here.
+// see `PairedProfile`'s doc comment) in the viewer's own locale/timezone.
 function formatPairedAt(unixSeconds) {
   try {
     return new Date(unixSeconds * 1000).toLocaleString(undefined, {
@@ -1125,11 +1061,84 @@ function formatPairedAt(unixSeconds) {
   }
 }
 
-// Rebuilds the Settings panel's "Paired browsers" list from scratch --
-// called whenever the panel opens and after any forget/rename, never kept
-// in sync incrementally like the queue rows above (this list is short and
-// only ever open while the user is actively looking at it, unlike the
-// queue's own continuous poll).
+// One `.prow` in the paired-browsers list: the name (click to rename in
+// place via `rename_paired_profile`), its paired date, and a hover-only
+// "Forget" link (confirm, then `forget_paired_profile`).
+function buildProfileRow(profile) {
+  const row = document.createElement("div");
+  row.className = "prow";
+
+  const left = document.createElement("div");
+  const name = document.createElement("span");
+  name.className = "pname";
+  name.textContent = profile.label;
+  name.title = "Click to rename";
+  name.style.cursor = "text";
+  const date = document.createElement("span");
+  date.className = "pdate";
+  date.textContent = `paired ${formatPairedAt(profile.paired_at)}`;
+  left.append(name, date);
+
+  name.addEventListener("click", () => {
+    const input = document.createElement("input");
+    input.type = "text";
+    input.className = "pname";
+    input.value = name.textContent;
+    let finished = false;
+    const finish = async (commit) => {
+      if (finished) return;
+      finished = true;
+      const value = commit ? input.value.trim() || name.textContent : name.textContent;
+      name.textContent = value;
+      input.replaceWith(name);
+      if (!commit) return;
+      try {
+        await invoke("rename_paired_profile", { id: profile.id, label: value });
+      } catch (err) {
+        console.error("rename_paired_profile failed:", err);
+      }
+    };
+    input.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        finish(true);
+      } else if (event.key === "Escape") {
+        finish(false);
+      }
+    });
+    input.addEventListener("blur", () => finish(true));
+    name.replaceWith(input);
+    input.focus();
+    input.select();
+  });
+
+  const forget = document.createElement("span");
+  forget.className = "unpair";
+  forget.textContent = "Forget";
+  let busy = false;
+  forget.addEventListener("click", async () => {
+    if (busy) return;
+    const confirmed = window.confirm(
+      `Forget "${name.textContent}"? That browser will need to pair again before it can send downloads here.`,
+    );
+    if (!confirmed) return;
+    busy = true;
+    try {
+      await invoke("forget_paired_profile", { id: profile.id });
+      await refreshPairedProfiles();
+    } catch (err) {
+      console.error("forget_paired_profile failed:", err);
+      busy = false;
+    }
+  });
+
+  row.append(left, forget);
+  return row;
+}
+
+// Rebuilds the Settings page's "Paired browsers" list (and its count row)
+// from scratch -- called whenever Settings opens and after any forget,
+// never kept in sync incrementally like the queue rows above.
 async function refreshPairedProfiles() {
   let profiles = [];
   try {
@@ -1139,55 +1148,9 @@ async function refreshPairedProfiles() {
   }
 
   pairedProfilesEmptyEl.classList.toggle("hidden", profiles.length > 0);
-
-  pairedProfilesListEl.replaceChildren(
-    ...profiles.map((profile) => {
-      const row = document.createElement("div");
-      row.className = "profilerow";
-
-      const label = document.createElement("input");
-      label.type = "text";
-      label.className = "profilelabel";
-      label.value = profile.label;
-      label.addEventListener("change", async () => {
-        const value = label.value.trim() || profile.label;
-        label.value = value;
-        try {
-          await invoke("rename_paired_profile", { id: profile.id, label: value });
-        } catch (err) {
-          console.error("rename_paired_profile failed:", err);
-        }
-      });
-      row.appendChild(label);
-
-      const date = document.createElement("span");
-      date.className = "profiledate";
-      date.textContent = `paired ${formatPairedAt(profile.paired_at)}`;
-      row.appendChild(date);
-
-      const forget = document.createElement("button");
-      forget.type = "button";
-      forget.className = "changebtn danger";
-      forget.textContent = "Forget";
-      forget.addEventListener("click", async () => {
-        const confirmed = window.confirm(
-          `Forget "${profile.label}"? That browser will need to pair again before it can send downloads here.`,
-        );
-        if (!confirmed) return;
-        forget.disabled = true;
-        try {
-          await invoke("forget_paired_profile", { id: profile.id });
-          await refreshPairedProfiles();
-        } catch (err) {
-          console.error("forget_paired_profile failed:", err);
-          forget.disabled = false;
-        }
-      });
-      row.appendChild(forget);
-
-      return row;
-    }),
-  );
+  pairedProfilesCountEl.textContent = `${profiles.length} browser${profiles.length === 1 ? "" : "s"} paired`;
+  pairedProfilesDotEl.classList.toggle("off", profiles.length === 0);
+  pairedProfilesListEl.replaceChildren(...profiles.map(buildProfileRow));
 }
 
 const ALLOW_PAIRING_IDLE_TEXT = "Lets one more browser profile connect, for 2 minutes";
@@ -1199,12 +1162,12 @@ function formatCountdown(totalSeconds) {
   return `${minutes}:${String(seconds).padStart(2, "0")}`;
 }
 
-// Drives the "Allow" button's live countdown from `remaining`
-// seconds down to 0, ticking once a second -- called both right after the
-// button is clicked (with the duration `allow_new_pairing` itself just
-// opened) and when the Settings panel is reopened while an earlier click's
-// window is still counting down (with whatever `pairing_mode_remaining_
-// seconds` reports), so the two can never show different numbers.
+// Drives the "Allow" button's live countdown from `remaining` seconds down
+// to 0, ticking once a second -- called both right after the button is
+// clicked (with the duration `allow_new_pairing` itself just opened) and
+// when Settings is reopened while an earlier click's window is still
+// counting down (with whatever `pairing_mode_remaining_seconds` reports),
+// so the two can never show different numbers.
 function startPairingCountdown(remaining) {
   if (pairingCountdownId != null) {
     clearInterval(pairingCountdownId);
@@ -1237,6 +1200,8 @@ allowNewPairingBtn.addEventListener("click", async () => {
   }
 });
 
+// Settings gear (in the addbar): loads the current settings into the
+// Settings page's controls, then swaps to that page.
 shedBtn.addEventListener("click", async () => {
   hideError(settingsErrorEl);
   ytdlpUpdateStatusEl.textContent = "";
@@ -1250,7 +1215,7 @@ shedBtn.addEventListener("click", async () => {
     setSwitch(settingHarvestChimeEl, settings.harvest_chime);
     setSwitch(settingAutoReplantEl, settings.auto_replant_failed);
     setSwitch(settingStartWithSeasonEl, settings.start_with_the_season);
-    openPanel(settingsPanelEl);
+    showPage(settingsPageEl);
     await refreshPairedProfiles();
     const remaining = await invoke("pairing_mode_remaining_seconds");
     if (remaining != null && remaining > 0) {
@@ -1266,8 +1231,8 @@ shedBtn.addEventListener("click", async () => {
 
 // Change opens the OS's native folder picker (commands::pick_download_folder)
 // instead of the field taking typed paths -- `settings-download-dir` is
-// `readonly` now. `null` covers the user canceling the dialog, which must
-// leave the field exactly as it was, not clear it.
+// `readonly`. `null` covers the user canceling the dialog, which must leave
+// the field exactly as it was, not clear it.
 settingsBrowseDownloadDirEl.addEventListener("click", async () => {
   settingsBrowseDownloadDirEl.disabled = true;
   try {
@@ -1290,10 +1255,10 @@ settingAutoReplantEl.addEventListener("click", () => {
   setSwitch(settingAutoReplantEl, !isSwitchOn(settingAutoReplantEl));
 });
 
-// Unlike the two switches above (applied on Save, with everything else in
-// this form), "Start with the season" applies immediately on click, via
-// the dedicated `set_autostart` command -- a toggle for a real OS-level
-// effect reads as instant, not as a field that waits for a Save button.
+// Unlike the two switches above (saved together with everything else when
+// Settings closes), "Start at login" applies immediately on click, via the
+// dedicated `set_autostart` command -- a toggle for a real OS-level effect
+// reads as instant.
 settingStartWithSeasonEl.addEventListener("click", async () => {
   const next = !isSwitchOn(settingStartWithSeasonEl);
   setSwitch(settingStartWithSeasonEl, next);
@@ -1324,83 +1289,15 @@ checkYtdlpUpdateBtn.addEventListener("click", async () => {
   }
 });
 
-document.getElementById("cancel-settings-btn").addEventListener("click", () => {
-  closePanel(settingsPanelEl);
-});
-
-document.getElementById("settings-panel-close").addEventListener("click", () => {
-  closePanel(settingsPanelEl);
-});
-
-// Opens the Browser Companion Setup Guide popup -- the Settings panel's own
-// "Set up" row button, same openPanel pattern as shedBtn opening Settings
-// itself. Settings is closed first so the two popups' dimmed `.panel`
-// backdrops never stack (there's no scenario where seeing both at once is
-// useful, and nothing else in this codebase layers one popup over another).
-browserSetupBtn.addEventListener("click", () => {
-  hideError(browserSetupErrorEl);
-  setStatus(setupPageStatusEl, "", false);
-  closePanel(settingsPanelEl);
-  openPanel(browserSetupPanelEl);
-});
-
-document.getElementById("browser-setup-panel-close").addEventListener("click", () => {
-  closePanel(browserSetupPanelEl);
-});
-
-// SKIP FOR NOW / "I'VE INSTALLED IT" are both plain dismiss actions -- this
-// round adds no persisted "has the user set up the extension" state (see
-// the spec's Appendix C wiring notes), so there's nothing to tell them apart
-// yet.
-document.getElementById("setup-skip-btn").addEventListener("click", () => {
-  closePanel(browserSetupPanelEl);
-});
-document.getElementById("setup-done-btn").addEventListener("click", () => {
-  closePanel(browserSetupPanelEl);
-});
-
-// "Open page" -- copies chrome://extensions to the clipboard via the real
-// `open_extensions_page` command (Task 3's backend). That command is
-// clipboard-only on purpose: chrome://extensions has no registered OS
-// protocol handler on a typical system, so attempting to open it would be
-// likely to pop the OS's own "choose an app" dialog instead of doing
-// anything useful -- see that command's own doc comment. The confirmation
-// message is shown via `setStatus` (not `showError`/the red
-// `#browser-setup-error`) specifically so this routine confirmation never
-// renders as if something had gone wrong -- only the rare case where the
-// clipboard write itself fails is a real error, and that's surfaced
-// through this same status line via `isError: true`.
-setupOpenPageBtn.addEventListener("click", async () => {
-  setupOpenPageBtn.disabled = true;
-  try {
-    const message = await invoke("open_extensions_page");
-    setStatus(setupPageStatusEl, message, false);
-  } catch (err) {
-    setStatus(setupPageStatusEl, String(err), true);
-  } finally {
-    setupOpenPageBtn.disabled = false;
-  }
-});
-
-// "Open folder" -- opens the bundled extension/ folder (Task 3's backend
-// resolves it via the resource-directory API) in the OS file explorer. A
-// successful open is its own confirmation (the explorer window appearing),
-// so only a failure needs an inline message here.
-setupOpenFolderBtn.addEventListener("click", async () => {
-  hideError(browserSetupErrorEl);
-  setupOpenFolderBtn.disabled = true;
-  try {
-    await invoke("open_extension_folder");
-  } catch (err) {
-    showError(browserSetupErrorEl, String(err));
-  } finally {
-    setupOpenFolderBtn.disabled = false;
-  }
-});
-
-settingsFormEl.addEventListener("submit", async (event) => {
-  event.preventDefault();
+// Settings has no Save button anymore: its "Close" link saves (the same
+// whole-DTO `set_settings` call the old form submit made) and only returns
+// to the ledger once that succeeds -- a failure stays on the page with the
+// error shown, exactly like the old form's submit did.
+async function saveSettingsAndClose() {
   hideError(settingsErrorEl);
+  // The old <form> ran the field's native `required`/`min`/`step` checks
+  // before submitting; run them explicitly now that there's no form.
+  if (!settingsMaxConcurrentEl.reportValidity()) return;
 
   const speedLimitRaw = settingsSpeedLimitEl.value.trim();
   const settings = {
@@ -1418,23 +1315,67 @@ settingsFormEl.addEventListener("submit", async (event) => {
   try {
     await invoke("set_settings", { settings });
     currentSettings = settings;
-    closePanel(settingsPanelEl);
+    showPage(ledgerPageEl);
   } catch (err) {
     showError(settingsErrorEl, String(err));
   }
+}
+document.getElementById("settings-close-btn").addEventListener("click", saveSettingsAndClose);
+
+// Settings' "Setup guide" link opens the Browser setup page; its Close and
+// "Installed it" both return to Settings (no persisted "has the user set
+// up the extension" state exists, so there's nothing to tell them apart).
+browserSetupBtn.addEventListener("click", () => {
+  hideError(browserSetupErrorEl);
+  setStatus(setupPageStatusEl, "", false);
+  showPage(browserSetupPageEl);
+});
+document.getElementById("browser-setup-close-btn").addEventListener("click", () => {
+  showPage(settingsPageEl);
+});
+document.getElementById("setup-done-btn").addEventListener("click", () => {
+  showPage(settingsPageEl);
 });
 
-// Status-bar Tool Shed icon, empty-state pot icon, Add Download panel seed
-// icon, the Settings panel's about-footer app icon, and both popups' own
-// title bar icon: all static (never change at runtime), so rendered once
-// here via renderIconInto.
+// "Open page" -- copies chrome://extensions to the clipboard via the real
+// `open_extensions_page` command. That command is clipboard-only on
+// purpose: chrome://extensions has no registered OS protocol handler on a
+// typical system, so attempting to open it would likely pop the OS's own
+// "choose an app" dialog instead -- see that command's own doc comment. The
+// confirmation is shown via `setStatus` (not `showError`) so this routine
+// confirmation never renders as if something had gone wrong.
+setupOpenPageBtn.addEventListener("click", async () => {
+  setupOpenPageBtn.disabled = true;
+  try {
+    const message = await invoke("open_extensions_page");
+    setStatus(setupPageStatusEl, message, false);
+  } catch (err) {
+    setStatus(setupPageStatusEl, String(err), true);
+  } finally {
+    setupOpenPageBtn.disabled = false;
+  }
+});
+
+// "Open folder" -- opens the bundled extension/ folder in the OS file
+// explorer. A successful open is its own confirmation (the explorer window
+// appearing), so only a failure needs an inline message here.
+setupOpenFolderBtn.addEventListener("click", async () => {
+  hideError(browserSetupErrorEl);
+  setupOpenFolderBtn.disabled = true;
+  try {
+    await invoke("open_extension_folder");
+  } catch (err) {
+    showError(browserSetupErrorEl, String(err));
+  } finally {
+    setupOpenFolderBtn.disabled = false;
+  }
+});
+
+// Settings gear, addbar arrow, and empty-state icon: all static (never
+// change at runtime), so rendered once here.
 renderIconInto(shedIconEl, settingsIcon);
-renderIconInto(emptyPotIconEl, appIcon);
-renderIconInto(addSeedIconEl, appIcon);
-renderIconInto(settingsAboutIconEl, appIcon);
-renderIconInto(document.getElementById("add-panel-appicon"), appIcon);
-renderIconInto(document.getElementById("settings-panel-appicon"), appIcon);
-renderIconInto(document.getElementById("browser-setup-panel-appicon"), appIcon);
+renderIconInto(addbarIconEl, appIcon);
+renderIconInto(emptyStateIconEl, appIcon);
 
 refreshList();
 setInterval(refreshList, POLL_INTERVAL_MS);
