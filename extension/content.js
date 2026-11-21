@@ -221,8 +221,14 @@
 
     button.addEventListener('mouseenter', cancelHide);
     button.addEventListener('mouseleave', scheduleHide);
-    button.addEventListener('mouseenter', () => button.classList.add('expanded'));
-    button.addEventListener('mouseleave', () => button.classList.remove('expanded'));
+    button.addEventListener('mouseenter', () => {
+      button.classList.remove('idle');
+      button.classList.add('expanded');
+    });
+    button.addEventListener('mouseleave', () => {
+      button.classList.remove('expanded');
+      button.classList.add('idle');
+    });
     button.addEventListener('click', onButtonClick);
 
     shadow.appendChild(style);
@@ -294,6 +300,7 @@
     }
     overlayButton.disabled = false;
     overlayButton.classList.remove('expanded');
+    overlayButton.classList.add('idle');
     overlayLabel.textContent = 'Download';
   }
 
