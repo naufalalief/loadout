@@ -139,14 +139,19 @@
            positionOverlayFor() via the fixed-position host div above, and
            a position:absolute offset on the pill itself would fight that
            existing, working tracking logic. */
-        display: flex;
+        display: inline-flex;
         align-items: center;
-        gap: 7px;
-        background: rgba(27, 31, 36, 0.92);
+        gap: 6px;
+        height: 30px;
+        padding: 0 8px;
         border: none;
-        border-radius: 7px;
-        padding: 7px 11px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+        border-radius: 15px;
+        background: #0067c0;
+        color: #fff;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35), 0 0 0 2px rgba(255, 255, 255, 0.9);
+        font-size: 12px;
+        white-space: nowrap;
+        overflow: hidden;
         cursor: pointer;
         /* A plain fade-in, not the old scale-up "pop" -- that animation's
            transform was still running when positionOverlayFor() measured
@@ -156,17 +161,10 @@
            but there's no reason to keep an animation this button no
            longer needs). */
         animation: fadein .12s ease;
-        transition: filter .1s ease;
         /* The host above sets pointer-events: none so its own box never
            captures clicks outside the button; this opts the pill itself
            back in, same role the old plain button selector's rule played. */
         pointer-events: auto;
-      }
-      .pill:hover {
-        filter: brightness(1.15);
-      }
-      .pill:active {
-        filter: brightness(0.9);
       }
       .pill:disabled {
         opacity: 0.65;
@@ -174,6 +172,7 @@
       }
       .pill .sprite {
         flex-shrink: 0;
+        display: block;
         fill: none;
         stroke: #fff;
         stroke-width: 1.8;
@@ -185,11 +184,25 @@
         font-size: 12px;
         font-weight: 500;
         color: #fff;
+        max-width: 0;
+        opacity: 0;
+        transition: max-width .14s ease, opacity .1s ease;
+      }
+      .pill.expanded {
+        padding: 0 10px 0 8px;
+      }
+      .pill.expanded .label {
+        max-width: 70px;
+        opacity: 1;
+      }
+      .pill.idle {
+        background: rgba(0, 0, 0, 0.55);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35), 0 0 0 1.5px rgba(255, 255, 255, 0.5);
       }
     `;
     const button = document.createElement('button');
     button.type = 'button';
-    button.className = 'pill';
+    button.className = 'pill idle';
 
     const svgNs = 'http://www.w3.org/2000/svg';
     const svg = document.createElementNS(svgNs, 'svg');
@@ -208,6 +221,8 @@
 
     button.addEventListener('mouseenter', cancelHide);
     button.addEventListener('mouseleave', scheduleHide);
+    button.addEventListener('mouseenter', () => button.classList.add('expanded'));
+    button.addEventListener('mouseleave', () => button.classList.remove('expanded'));
     button.addEventListener('click', onButtonClick);
 
     shadow.appendChild(style);
@@ -278,6 +293,7 @@
       return;
     }
     overlayButton.disabled = false;
+    overlayButton.classList.remove('expanded');
     overlayLabel.textContent = 'Download';
   }
 
