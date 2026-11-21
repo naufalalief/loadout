@@ -1200,22 +1200,40 @@ allowNewPairingBtn.addEventListener("click", async () => {
   }
 });
 
+// Serializes every settings-mutating operation (saveSettings, and the
+// separate set_autostart call below) so a write only ever merges onto
+// `currentSettings` after every earlier-queued write has actually
+// finished -- without this, two near-simultaneous commits (e.g.
+// toggling two switches within one IPC round-trip) can race, and the
+// later-resolving one can silently persist a stale snapshot over the
+// other's change.
+let settingsQueue = Promise.resolve();
+function enqueueSettingsWrite(fn) {
+  const result = settingsQueue.then(fn, fn);
+  settingsQueue = result.catch(() => {});
+  return result;
+}
+
 // Persists one Settings field change immediately. `set_settings` stores
 // the whole DTO, not a diff, so `patch` is always merged onto the cached
 // `currentSettings` (refreshed from `get_settings` whenever Settings opens)
 // and the cache is only updated once the save succeeds. A failure is shown
-// in `#settings-error`. Returns whether the save succeeded.
+// in `#settings-error`. Returns whether the save succeeded. Runs through
+// `enqueueSettingsWrite` so `currentSettings` is only read to build the
+// merge after all earlier-queued writes have actually finished.
 async function saveSettings(patch) {
-  hideError(settingsErrorEl);
-  const settings = { ...currentSettings, ...patch };
-  try {
-    await invoke("set_settings", { settings });
-    currentSettings = settings;
-    return true;
-  } catch (err) {
-    showError(settingsErrorEl, String(err));
-    return false;
-  }
+  return enqueueSettingsWrite(async () => {
+    hideError(settingsErrorEl);
+    const settings = { ...currentSettings, ...patch };
+    try {
+      await invoke("set_settings", { settings });
+      currentSettings = settings;
+      return true;
+    } catch (err) {
+      showError(settingsErrorEl, String(err));
+      return false;
+    }
+  });
 }
 
 // Settings gear (in the addbar): loads the current settings into the
@@ -1302,28 +1320,35 @@ commitOnBlurOrEnter(settingsMaxConcurrentEl, () => {
   saveSettings({ max_concurrent: value });
 });
 
-commitOnBlurOrEnter(settingsSpeedLimitEl, () => {
+commitOnBlurOrEnter(settingsSpeedLimitEl, async () => {
   const value = parseSpeedLimit(settingsSpeedLimitEl.value.trim());
   if (value === (currentSettings.default_speed_limit_bytes_per_sec ?? null)) return;
-  saveSettings({ default_speed_limit_bytes_per_sec: value });
+  if (await saveSettings({ default_speed_limit_bytes_per_sec: value })) {
+    settingsSpeedLimitEl.value = value ?? "";
+  }
 });
 
 // Like the switches above, "Start at login" applies immediately on click,
 // but via its own dedicated `set_autostart` command (a real OS-level
-// effect) rather than `set_settings`.
+// effect) rather than `set_settings`. Still routed through
+// `enqueueSettingsWrite` so it can't race a concurrent `saveSettings()`
+// call and silently revert it (or be reverted by it).
 settingStartWithSeasonEl.addEventListener("click", async () => {
   const next = !isSwitchOn(settingStartWithSeasonEl);
   setSwitch(settingStartWithSeasonEl, next);
   settingStartWithSeasonEl.disabled = true;
-  try {
-    await invoke("set_autostart", { enabled: next });
-    currentSettings.start_with_the_season = next;
-  } catch (err) {
-    console.error("set_autostart failed:", err);
-    setSwitch(settingStartWithSeasonEl, !next);
-  } finally {
-    settingStartWithSeasonEl.disabled = false;
-  }
+  const ok = await enqueueSettingsWrite(async () => {
+    try {
+      await invoke("set_autostart", { enabled: next });
+      currentSettings = { ...currentSettings, start_with_the_season: next };
+      return true;
+    } catch (err) {
+      console.error("set_autostart failed:", err);
+      return false;
+    }
+  });
+  if (!ok) setSwitch(settingStartWithSeasonEl, !next);
+  settingStartWithSeasonEl.disabled = false;
 });
 
 checkYtdlpUpdateBtn.addEventListener("click", async () => {

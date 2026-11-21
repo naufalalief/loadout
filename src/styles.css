@@ -41,7 +41,7 @@ html, body { margin: 0; font-family: var(--font-ui); height: 100%; }
 /* Table body / rows */
 .tbody { flex: 1; overflow: auto; }
 .trow { display: flex; align-items: center; height: 30px; padding: 0 10px; gap: 10px; border-bottom: 1px solid var(--border); font-size: 12.5px; position: relative; }
-.trow:nth-child(even) { background: var(--zebra); }
+.trow:nth-child(even of .trow) { background: var(--zebra); }
 .trow .c-name { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .trow .c-size { width: 60px; flex-shrink: 0; text-align: right; color: var(--text-muted); }
 .trow .c-progress { width: clamp(140px, 20vw, 340px); flex-shrink: 0; display: flex; align-items: center; gap: 8px; }
@@ -142,8 +142,8 @@ html, body { margin: 0; font-family: var(--font-ui); height: 100%; }
 .toggle.on::after { left: 17px; }
 .select { display: flex; align-items: center; gap: 6px; height: 26px; padding: 0 8px; border: 1px solid var(--border); border-radius: 3px; font-size: 12px; color: var(--text); cursor: pointer; background: var(--bg); }
 .select svg { color: var(--text-muted); flex-shrink: 0; display: block; }
-.pathval,
-.smallinput { font-size: 11.5px; color: var(--text-muted); max-width: 190px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border: none; background: none; text-align: right; }
+.pathval { font-size: 11.5px; color: var(--text-muted); max-width: 190px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border: none; background: none; text-align: right; }
+.smallinput { height: 26px; width: 80px; padding: 0 8px; border: 1px solid var(--border); border-radius: 3px; font-size: 12px; color: var(--text); background: var(--bg); text-align: right; font-family: inherit; }
 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); flex-shrink: 0; }
 .dot.off { background: var(--text-muted); }
 .plist,

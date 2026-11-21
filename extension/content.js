@@ -299,8 +299,9 @@
       return;
     }
     overlayButton.disabled = false;
-    overlayButton.classList.remove('expanded');
-    overlayButton.classList.add('idle');
+    const hovering = overlayButton.matches(':hover');
+    overlayButton.classList.toggle('expanded', hovering);
+    overlayButton.classList.toggle('idle', !hovering);
     overlayLabel.textContent = 'Download';
   }
 
